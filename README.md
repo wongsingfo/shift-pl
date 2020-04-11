@@ -29,3 +29,8 @@ Term:
   ...
 ```
 
+lexer.mll (line 27)
+```ocaml
+  ("shift", fun i -> Parser.SHIFT i);
+  ("reset", fun i -> Parser.RESET i);
+```
