@@ -70,8 +70,8 @@ let rec process_command (ctx,nextuvar,constr) cmd = match cmd with
       print_newline ();
       (ctx, nextuvar', constr'')
   | Bind(fi,x,bind) -> 
-       pr x; pr " "; prbinding ctx bind; force_newline();
-      (addbinding ctx x bind, uvargen, constr)
+      pr x; pr " "; prbinding ctx bind; force_newline();
+      (addbinding ctx x bind, nextuvar, constr)
   
 let process_file f (ctx,nextuvar,constr) =
   alreadyImported := f :: !alreadyImported;
