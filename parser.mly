@@ -100,8 +100,8 @@ open Syntax
    
 */
 
-%start toplevel
-%type < Syntax.context -> (Syntax.command list * Syntax.context) > toplevel
+%start top_level
+%type <Syntax.term> top_level
 %%
 
 /* ---------------------------------------------------------------------- */
@@ -109,110 +109,75 @@ open Syntax
 
 /* The top level of a file is a sequence of commands, each terminated
    by a semicolon. */
-toplevel :
-    EOF
-      { fun ctx -> [],ctx }
-  | Command SEMI toplevel
-      { fun ctx ->
-          let cmd,ctx = $1 ctx in
-          let cmds,ctx = $3 ctx in
-          cmd::cmds,ctx }
-
-/* A top-level command */
-Command :
-  | Term 
-      { fun ctx -> (let t = $1 ctx in Eval(tmInfo t,t)),ctx }
-  | LCID Binder
-      { fun ctx -> ((Bind($1.i,$1.v,$2 ctx)), addname ctx $1.v) }
-
-/* Right-hand sides of top-level bindings */
-Binder :
-    COLON Type
-      { fun ctx -> VarBind ($2 ctx)}
+top_level:
+  | top_term SEMI { $1 }
+;
 
 /* All type expressions */
-Type :
-    ArrowType
-                { $1 }
+top_type: 
+  | fun_type { $1 }
+;
 
 /* Atomic types are those that never need extra parentheses */
-AType :
-    LPAREN Type RPAREN  
-           { $2 } 
-  | BOOL
-      { fun ctx -> TyBool }
-  | NAT
-      { fun ctx -> TyNat }
-  | UCID 
-      { fun ctx ->
-          TyId($1.v) }
+atom_type:
+  | LPAREN top_type RPAREN { $2 } 
+  | BOOL { TyBool }
+  | NAT { TyNat }
+  | UCID { TyId($1.v) }
+;
 
 /* An "arrow type" is a sequence of atomic types separated by
    arrows. */
-ArrowType :
-    AType ARROW ArrowType
-     { fun ctx -> TyArr($1 ctx, $3 ctx) }
-  | AType
-            { $1 }
+fun_type:
+  | atom_type ARROW fun_type 
+    { TyFun {tm = ($1, $3); cm = TyId (freshname ()), TyId (freshname ()) } }
+  | atom_type 
+    { $1 }
+;
 
-Term :
-    AppTerm
-      { $1 }
-  | LET LCID EQ Term IN Term
-      { fun ctx -> TmLet($1, $2.v, $4 ctx, $6 (addname ctx $2.v)) }
-  | LET USCORE EQ Term IN Term
-      { fun ctx -> TmLet($1, "_", $4 ctx, $6 (addname ctx "_")) }
-  | IF Term THEN Term ELSE Term
-      { fun ctx -> TmIf($1, $2 ctx, $4 ctx, $6 ctx) }
-  | SHIFT LCID IN Term
-      { fun ctx -> TmShift($1, $2.v, $4 (addname ctx $2.v)) }
-  | RESET Term 
-      { fun ctx -> TmReset($1, $2 ctx) }
-  | LAMBDA LCID DOT Term 
-      { fun ctx ->
-          let ctx1 = addname ctx $2.v in
-          TmAbs($1, $2.v, None, $4 ctx1) }
-  | LAMBDA LCID COLON Type DOT Term 
-      { fun ctx ->
-          let ctx1 = addname ctx $2.v in
-          TmAbs($1, $2.v, Some($4 ctx), $6 ctx1) }
-  | LAMBDA USCORE COLON Type DOT Term 
-      { fun ctx ->
-          let ctx1 = addname ctx "_" in
-          TmAbs($1, "_", Some($4 ctx), $6 ctx1) }
+top_term:
+  | app_term 
+    { $1 }
+  | LET LCID EQ top_term IN top_term
+    { $1, TmLet($2.v, $4, $6) }
+  | LET USCORE EQ top_term IN top_term
+    { $1, TmLet("_", $4, $6) }
+  | IF top_term THEN top_term ELSE top_term
+    { $1, TmIf($2, $4, $6) }
+  | SHIFT LCID IN top_term
+    { $1, TmShift($2.v, $4) }
+  | RESET top_term 
+    { $1, TmReset($2) }
+  | LAMBDA LCID DOT top_term 
+    { $1, TmAbs($2.v, None, $4) }
+  | LAMBDA LCID COLON top_type DOT top_term 
+    { $1, TmAbs($2.v, Some $4, $6) }
+  | LAMBDA USCORE COLON top_type DOT top_term 
+    { $1, TmAbs("_", Some $4, $6) }
 
-AppTerm :
-    ATerm
-      { $1 }
-  | SUCC ATerm
-      { fun ctx -> TmSucc($1, $2 ctx) }
-  | PRED ATerm
-      { fun ctx -> TmPred($1, $2 ctx) }
-  | ISZERO ATerm
-      { fun ctx -> TmIsZero($1, $2 ctx) }
-  | AppTerm ATerm
-      { fun ctx ->
-          let e1 = $1 ctx in
-          let e2 = $2 ctx in
-          TmApp(tmInfo e1,e1,e2) }
+app_term:
+  | atom_term
+    { $1 }
+  | SUCC atom_term
+    { $1, TmSucc($2) }
+  | PRED atom_term
+    { $1, TmPred($2) }
+  | ISZERO atom_term
+    { $1, TmIsZero($2) }
+  | app_term atom_term
+    { term2info $1, TmApp($1, $2) }
 
 /* Atomic terms are ones that never require extra parentheses */
-ATerm :
-    LPAREN Term RPAREN  
-      { $2 } 
+atom_term:
+  | LPAREN top_term RPAREN  
+    { $2 } 
   | LCID 
-      { fun ctx ->
-          TmVar($1.i, name2index $1.i ctx $1.v, ctxlength ctx) }
+    { $1.i, TmVar($1.v) }
   | TRUE
-      { fun ctx -> TmTrue($1) }
+    { $1, TmBool(true) }
   | FALSE
-      { fun ctx -> TmFalse($1) }
+    { $1, TmBool(false) }
   | INTV
-      { fun ctx ->
-          let rec f n = match n with
-              0 -> TmZero($1.i)
-            | n -> TmSucc($1.i, f (n-1))
-          in f $1.v }
-
+    { $1.i, TmNat($1.v) }
 
 /*   */

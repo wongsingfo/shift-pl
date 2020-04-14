@@ -8,6 +8,7 @@
 
 {
 open Support.Error
+exception Eof
 
 let reservedWords = [
   (* Keywords *)
@@ -170,7 +171,7 @@ rule main = parse
 
 | "\"" { resetStr(); startLex := info lexbuf; string lexbuf }
 
-| eof { Parser.EOF(info lexbuf) }
+| eof { raise Eof }
 
 | _  { error (info lexbuf) "Illegal character" }
 

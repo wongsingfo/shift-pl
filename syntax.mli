@@ -1,63 +1,53 @@
-(* module Syntax: syntax trees and associated support functions *)
-
-open Support.Pervasive
 open Support.Error
 
-(* Data type definitions *)
 type ty =
-    TyBool
+  | TyBool
   | TyNat
-  | TyArr of ty * ty
+  | TyFun of
+      { tm : ty * ty
+      ; cm : ty * ty
+      }
   | TyId of string
 
-type term =
-    TmVar of info * int * int
-  | TmLet of info * string * term * term
-  | TmTrue of info
-  | TmFalse of info
-  | TmIf of info * term * term * term
-  | TmZero of info
-  | TmSucc of info * term
-  | TmPred of info * term
-  | TmIsZero of info * term
-  | TmAbs of info * string * ty option * term
-  | TmApp of info * term * term
-  (* shift k in t *)
-  | TmShift of info * string * term
-  (* reset t *)
-  | TmReset of info * term
+type term = info * term'
 
-type binding =
-    NameBind 
-  | VarBind of ty
+and term' =
+  | TmVar of string
+  | TmFix of string * string * ty option * term
+  | TmAbs of string * ty option * term
+  | TmApp of term * term
+  | TmLet of string * term * term
+  | TmShift of string * term
+  | TmReset of term
+  | TmIf of term * term * term
+  | TmSucc of term
+  | TmPred of term
+  | TmIsZero of term
+  | TmNat of int
+  | TmBool of bool
 
-type command =
-  | Eval of info * term
-  | Bind of info * string * binding
+type purity =
+  | Pure
+  | Impure
 
-(* Contexts *)
-type context
-val emptycontext : context 
-val ctxlength : context -> int
-val addbinding : context -> string -> binding -> context
-val addname: context -> string -> context
-val index2name : info -> context -> int -> string
-val getbinding : info -> context -> int -> binding
-val name2index : info -> context -> string -> int
-val isnamebound : context -> string -> bool
-val getTypeFromContext : info -> context -> int -> ty
+type aterm = info * purity * aterm'
 
-(* Shifting and substitution *)
-val termShift: int -> term -> term
-val termSubstTop: term -> term -> term
+and aterm' =
+  | ATVar of string
+  | ATFix of purity * string * string * aterm
+  | ATAbs of purity * string * aterm
+  | ATApp of purity * aterm * aterm
+  | ATLet of string * aterm * aterm
+  | ATShift of purity * string * aterm
+  | ATReset of aterm
+  | ATIf of aterm * aterm * aterm
+  | ATSucc of aterm
+  | ATPred of aterm
+  | ATIsZero of aterm
+  | ATNat of int
+  | ATBool of bool
 
-(* Printing *)
-val printtm: context -> term -> unit
-val printtm_ATerm: bool -> context -> term -> unit
-val printty : ty -> unit
-val printty_Type : bool -> ty -> unit
-val prbinding : context -> binding -> unit
-
-(* Misc *)
-val tmInfo: term -> info
-
+val term2string : term -> string
+val type2string : ty -> string
+val freshname : unit -> string
+val term2info : term -> info

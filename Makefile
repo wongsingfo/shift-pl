@@ -16,7 +16,7 @@
 OCAMLCFLAGS = -bin-annot
 # These are the object files needed to rebuild the main executable file
 #
-OBJS = support.cmo syntax.cmo core.cmo parser.cmo lexer.cmo main.cmo
+OBJS = support.cmo syntax.cmo infer.cmo cps.cmo eval.cmo parser.cmo lexer.cmo main.cmo
 CMIS = $(patsubst %.mli, %.cmi, $(wildcard *.mli))
 CMIS += parser.cmi lexer.cmi
 
