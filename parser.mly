@@ -37,6 +37,7 @@ open Syntax
 %token <Support.Error.info> LAMBDA
 %token <Support.Error.info> SHIFT
 %token <Support.Error.info> RESET
+%token <Support.Error.info> FIX
 
 /* Identifier and constant value tokens */
 %token <string Support.Error.withinfo> UCID  /* uppercase-initial */
@@ -154,6 +155,10 @@ top_term:
     { $1, TmAbs($2.v, Some $4, $6) }
   | LAMBDA USCORE COLON top_type DOT top_term 
     { $1, TmAbs("_", Some $4, $6) }
+  | FIX LCID DOT LCID DOT top_term
+    { $1, TmFix($2.v, $4.v, None, $6) }
+  | FIX LCID DOT LCID COLON top_type DOT top_term
+    { $1, TmFix($2.v, $4.v, Some $6, $8) }
 
 app_term:
   | atom_term
