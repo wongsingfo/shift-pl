@@ -127,8 +127,6 @@ atom_type:
   | UCID { TyId($1.v) }
 ;
 
-/* An "arrow type" is a sequence of atomic types separated by
-   arrows. */
 fun_type:
   | atom_type ARROW fun_type 
     { TyFun {tm = ($1, $3); cm = TyId (freshname ()), TyId (freshname ()) } }
@@ -159,6 +157,7 @@ top_term:
     { $1, TmFix($2.v, $4.v, None, $6) }
   | FIX LCID DOT LCID COLON top_type DOT top_term
     { $1, TmFix($2.v, $4.v, Some $6, $8) }
+;
 
 app_term:
   | atom_term
@@ -171,6 +170,7 @@ app_term:
     { $1, TmIsZero($2) }
   | app_term atom_term
     { term2info $1, TmApp($1, $2) }
+;
 
 /* Atomic terms are ones that never require extra parentheses */
 atom_term:
@@ -184,5 +184,4 @@ atom_term:
     { $1, TmBool(false) }
   | INTV
     { $1.i, TmNat($1.v) }
-
-/*   */
+;

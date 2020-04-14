@@ -9,7 +9,7 @@ let () =
   try
     while true do
       let term = Parser.top_level Lexer.main lexbuf in
-      print_string "input a term";
+      print_string (Syntax.term2string term);
       print_newline ();
       flush stdout
     done
