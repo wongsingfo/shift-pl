@@ -92,7 +92,7 @@ let tmmap onvar c t =
   | TmIsZero(fi,t1) -> TmIsZero(fi, walk c t1)
   | TmAbs(fi,x,tyT1,t2) -> TmAbs(fi,x,tyT1,walk (c+1) t2)
   | TmApp(fi,t1,t2) -> TmApp(fi,walk c t1,walk c t2)
-  | TmShift(fi,k,t1) -> TmShift(fi, k, walk c t1)
+  | TmShift(fi,k,t1) -> TmShift(fi, k, walk (c+1) t1)
   | TmReset(fi,t1) -> TmReset(fi, walk c t1)
   in walk c t
 
