@@ -25,7 +25,7 @@ DEPEND += lexer.ml parser.ml
 
 # When "make" is invoked with no arguments, we build an executable 
 # typechecker, after building everything that it depends on
-all: $(DEPEND) $(OBJS) f
+all: $(DEPEND) $(OBJS) f interface
 
 # On a Windows machine, we do exactly the same except that the executable
 # file that gets built needs to have the extension ".exe"
