@@ -3,10 +3,7 @@ open Support.Error
 type ty =
   | TyBool
   | TyNat
-  | TyFun of
-      { tm : ty * ty
-      ; cm : ty * ty
-      }
+  | TyFun of ty * ty * ty * ty
   | TyId of string
 
 type term = info * term'
@@ -62,7 +59,7 @@ let type2string =
   let rec top_type ty = fun_type ty
   and fun_type ty =
     match ty with
-    | TyFun { tm = ty1, ty2 } -> spf "%s->%s" (atom_type ty1) (fun_type ty2)
+    | TyFun (ty1, ty2, _, _) -> spf "%s->%s" (atom_type ty1) (fun_type ty2)
     | _ -> atom_type ty
   and atom_type ty =
     match ty with

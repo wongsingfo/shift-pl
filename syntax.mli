@@ -3,10 +3,8 @@ open Support.Error
 type ty =
   | TyBool
   | TyNat
-  | TyFun of
-      { tm : ty * ty
-      ; cm : ty * ty
-      }
+  (* TyFun(a, b, c, d) = a/c -> b/d = a -> b @cps[c, d] *)
+  | TyFun of ty * ty * ty * ty
   | TyId of string
 
 type term = info * term'

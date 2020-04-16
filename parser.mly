@@ -129,7 +129,7 @@ atom_type:
 
 fun_type:
   | atom_type ARROW fun_type 
-    { TyFun {tm = ($1, $3); cm = TyId (freshname ()), TyId (freshname ()) } }
+    { TyFun ($1, $3, TyId (freshname ()), TyId (freshname ())) }
   | atom_type 
     { $1 }
 ;
