@@ -8,7 +8,7 @@ type annot =
 type ty =
   | TyBool
   | TyNat
-  (* TyFun(a, b, c, d) = a/c -> b/d = a -> b @cps[c, d] *)
+  (* TyFun(T1, T2, T3, T4, a) = T1 -> T2 @cps[T3, T4, a] *)
   | TyFun of ty * ty * ty * ty * annot
   | TyId of string
 
