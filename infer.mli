@@ -1,3 +1,3 @@
 open Syntax 
 
-val infer : term -> aterm * ty
+val infer : term -> term * ty

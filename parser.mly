@@ -7,6 +7,8 @@
 open Support.Error
 open Support.Pervasive
 open Syntax
+
+let annot () = AnId (freshname "?a")
 %}
 
 /* ---------------------------------------------------------------------- */
@@ -129,14 +131,33 @@ atom_type:
 
 fun_type:
   | atom_type ARROW fun_type 
-    { TyFun ($1, $3, TyId (freshname ()), TyId (freshname ())) }
+    { TyFun ($1, $3, TyId (freshname "?X"), TyId (freshname "?X"), annot ()) }
   | atom_type 
     { $1 }
 ;
 
 top_term:
-  | app_term 
+  | top_term_
+    { let fi, t = $1 in fi, annot (), t }
+  | app_term
     { $1 }
+;
+
+app_term:
+  | app_term_
+    { let fi, t = $1 in fi, annot (), t }
+  | atom_term
+    { $1 }
+;
+
+atom_term:
+  | atom_term_
+    { let fi, t = $1 in fi, annot (), t }
+  | LPAREN top_term RPAREN  
+    { $2 } 
+;
+
+top_term_:
   | LET LCID EQ top_term IN top_term
     { $1, TmLet($2.v, $4, $6) }
   | LET USCORE EQ top_term IN top_term
@@ -144,24 +165,22 @@ top_term:
   | IF top_term THEN top_term ELSE top_term
     { $1, TmIf($2, $4, $6) }
   | SHIFT LCID IN top_term
-    { $1, TmShift($2.v, $4) }
+    { $1, TmShift(annot (), $2.v, $4) }
   | RESET top_term 
     { $1, TmReset($2) }
   | LAMBDA LCID DOT top_term 
-    { $1, TmAbs($2.v, None, $4) }
+    { $1, TmAbs(annot (), $2.v, None, $4) }
   | LAMBDA LCID COLON top_type DOT top_term 
-    { $1, TmAbs($2.v, Some $4, $6) }
+    { $1, TmAbs(annot (), $2.v, Some $4, $6) }
   | LAMBDA USCORE COLON top_type DOT top_term 
-    { $1, TmAbs("_", Some $4, $6) }
+    { $1, TmAbs(annot (), "_", Some $4, $6) }
   | FIX LCID DOT LCID DOT top_term
-    { $1, TmFix($2.v, $4.v, None, $6) }
+    { $1, TmFix(annot (), $2.v, $4.v, None, $6) }
   | FIX LCID DOT LCID COLON top_type DOT top_term
-    { $1, TmFix($2.v, $4.v, Some $6, $8) }
+    { $1, TmFix(annot (), $2.v, $4.v, Some $6, $8) }
 ;
 
-app_term:
-  | atom_term
-    { $1 }
+app_term_:
   | SUCC atom_term
     { $1, TmSucc($2) }
   | PRED atom_term
@@ -169,13 +188,11 @@ app_term:
   | ISZERO atom_term
     { $1, TmIsZero($2) }
   | app_term atom_term
-    { term2info $1, TmApp($1, $2) }
+    { term2info $1, TmApp(annot (), $1, $2) }
 ;
 
 /* Atomic terms are ones that never require extra parentheses */
-atom_term:
-  | LPAREN top_term RPAREN  
-    { $2 } 
+atom_term_:
   | LCID 
     { $1.i, TmVar($1.v) }
   | TRUE

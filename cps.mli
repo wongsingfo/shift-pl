@@ -1,3 +1,3 @@
 open Syntax
 
-val cps: aterm -> term
+val cps: term -> term

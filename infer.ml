@@ -1,3 +1,3 @@
 open Syntax
 
-let infer ((fi, t) : term) = (fi, Impure, ATNat 0), TyNat
+let infer t = t, TyNat
