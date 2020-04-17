@@ -3,9 +3,9 @@ open Support.Error
 type annot =
   | AnPure
   | AnImpure
-    (* purity variable, for solving constraints *)
+  (* purity variable, for solving constraints *)
   | AnId of string
-    (* after CPS, we don't care about the purity any more *)
+  (* after CPS, we don't care about the purity any more *)
   | AnNone
 
 type ty =

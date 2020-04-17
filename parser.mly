@@ -7,8 +7,6 @@
 open Support.Error
 open Support.Pervasive
 open Syntax
-
-let annot () = AnId (freshname "?a")
 %}
 
 /* ---------------------------------------------------------------------- */
@@ -131,28 +129,28 @@ atom_type:
 
 fun_type:
   | atom_type ARROW fun_type 
-    { TyFun ($1, $3, TyId (freshname "?X"), TyId (freshname "?X"), annot ()) }
+    { TyFun ($1, $3, TyId (freshname "?X"), TyId (freshname "?X"), AnNone) }
   | atom_type 
     { $1 }
 ;
 
 top_term:
   | top_term_
-    { let fi, t = $1 in fi, annot (), t }
+    { let fi, t = $1 in fi, AnNone, t }
   | app_term
     { $1 }
 ;
 
 app_term:
   | app_term_
-    { let fi, t = $1 in fi, annot (), t }
+    { let fi, t = $1 in fi, AnNone, t }
   | atom_term
     { $1 }
 ;
 
 atom_term:
   | atom_term_
-    { let fi, t = $1 in fi, annot (), t }
+    { let fi, t = $1 in fi, AnNone, t }
   | LPAREN top_term RPAREN  
     { $2 } 
 ;
@@ -165,19 +163,19 @@ top_term_:
   | IF top_term THEN top_term ELSE top_term
     { $1, TmIf($2, $4, $6) }
   | SHIFT LCID IN top_term
-    { $1, TmShift(annot (), $2.v, $4) }
+    { $1, TmShift(AnNone, $2.v, $4) }
   | RESET top_term 
     { $1, TmReset($2) }
   | LAMBDA LCID DOT top_term 
-    { $1, TmAbs(annot (), $2.v, None, $4) }
+    { $1, TmAbs(AnNone, $2.v, None, $4) }
   | LAMBDA LCID COLON top_type DOT top_term 
-    { $1, TmAbs(annot (), $2.v, Some $4, $6) }
+    { $1, TmAbs(AnNone, $2.v, Some $4, $6) }
   | LAMBDA USCORE COLON top_type DOT top_term 
-    { $1, TmAbs(annot (), "_", Some $4, $6) }
+    { $1, TmAbs(AnNone, "_", Some $4, $6) }
   | FIX LCID DOT LCID DOT top_term
-    { $1, TmFix(annot (), $2.v, $4.v, None, $6) }
+    { $1, TmFix(AnNone, $2.v, $4.v, None, $6) }
   | FIX LCID DOT LCID COLON top_type DOT top_term
-    { $1, TmFix(annot (), $2.v, $4.v, Some $6, $8) }
+    { $1, TmFix(AnNone, $2.v, $4.v, Some $6, $8) }
 ;
 
 app_term_:
@@ -188,7 +186,7 @@ app_term_:
   | ISZERO atom_term
     { $1, TmIsZero($2) }
   | app_term atom_term
-    { term2info $1, TmApp(annot (), $1, $2) }
+    { term2info $1, TmApp(AnNone, $1, $2) }
 ;
 
 /* Atomic terms are ones that never require extra parentheses */

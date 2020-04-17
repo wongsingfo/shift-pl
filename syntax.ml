@@ -4,6 +4,7 @@ type annot =
   | AnPure
   | AnImpure
   | AnId of string
+  | AnNone
 
 type ty =
   | TyBool
