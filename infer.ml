@@ -101,8 +101,35 @@ and subst_acons s = List.map (acon_map ident @@ subst_an s)
 let compose1 f s1 x v = Dict.update x (fun _ -> Some (f s1 v)) s1
 let compose f s1 s2 = Dict.fold (fun x v s -> Dict.update x (fun _ -> Some (f s1 v)) s) s2
 
+(* unify the type constraints to get the type substitution *)
+let unify_tcons : type_constr list -> type_subst =
+  let rec occur x = function
+    | TyId y -> x = y
+    | TyFun (t1, t2, t3, t4, _) -> occur x t1 || occur x t2 || occur x t3 || occur x t4
+    | _ -> false
+  in
+  let comp = compose1 subst_ty in
+  let rec unify constr : type_subst =
+    match constr with
+    | [] -> Dict.empty
+    | (ty1, ty2) :: rest when ty1 = ty2 -> unify rest
+    | (TyId x, tyT) :: rest ->
+      if occur x tyT
+      then error dummyinfo "recursive typing"
+      else comp (unify (subst1_tcons x tyT rest)) x tyT
+    | (tyT, TyId x) :: rest ->
+      if occur x tyT
+      then error dummyinfo "recursive typing"
+      else comp (unify (subst1_tcons x tyT rest)) x tyT
+    | (TyFun (t1, t2, t3, t4, _), TyFun (t1', t2', t3', t4', _)) :: rest ->
+      unify ((t1, t1') :: (t2, t2') :: (t3, t3') :: (t4, t4') :: rest)
+    | _ -> error dummyinfo "unsolvable constraints"
+  in
+  unify
+;;
+
 (* reconstruct the type, and annotate the term *)
-let recon : type_context -> term -> term * typing * type_constr list * annot_constr list =
+let recon : term -> term * typing * type_constr list * annot_constr list =
   (* fresh variable *)
   let new_a () = AnId (freshname "?a")
   and new_X () = TyId (freshname "?X") in
@@ -164,34 +191,9 @@ let recon : type_context -> term -> term * typing * type_constr list * annot_con
       (fi, a, TmApp (a3, t1, t2)), (tyX, tyY, tyS1, a), tc, ac
     | _ -> error fi ("currently not supporting the term: " ^ term2string t')
   in
-  recon
-;;
-
-(* unify the type constraints to get the type substitution *)
-let unify_tcons : type_constr list -> type_subst =
-  let rec occur x = function
-    | TyId y -> x = y
-    | TyFun (t1, t2, t3, t4, _) -> occur x t1 || occur x t2 || occur x t3 || occur x t4
-    | _ -> false
-  in
-  let comp = compose1 subst_ty in
-  let rec unify constr : type_subst =
-    match constr with
-    | [] -> Dict.empty
-    | (ty1, ty2) :: rest when ty1 = ty2 -> unify rest
-    | (TyId x, tyT) :: rest ->
-      if occur x tyT
-      then error dummyinfo "recursive typing"
-      else comp (unify (subst1_tcons x tyT rest)) x tyT
-    | (tyT, TyId x) :: rest ->
-      if occur x tyT
-      then error dummyinfo "recursive typing"
-      else comp (unify (subst1_tcons x tyT rest)) x tyT
-    | (TyFun (t1, t2, t3, t4, _), TyFun (t1', t2', t3', t4', _)) :: rest ->
-      unify ((t1, t1') :: (t2, t2') :: (t3, t3') :: (t4, t4') :: rest)
-    | _ -> error dummyinfo "unsolvable constraints"
-  in
-  unify
+  fun t ->
+    let t, ((ty1, ty2, _, _) as typing), tcons, acons = recon empty_tyctx t in
+    t, typing, (ty1, ty2) :: tcons, acons
 ;;
 
 let unify_acons : type_subst -> annot_constr list -> annot_subst =
@@ -226,6 +228,7 @@ let unify_acons : type_subst -> annot_constr list -> annot_subst =
       | [] -> reduced, s, []
       | AConEQ (AnId x, AnPure) :: rest -> unify true (comp s x AnPure) rest
       | AConEQ (AnId x, AnImpure) :: rest -> unify true (comp s x AnImpure) rest
+      | AConLE (AnImpure, AnPure) :: _ -> error dummyinfo "error purity constraints"
       | AConLE (AnPure, _) :: rest -> unify true s rest
       | AConLE (_, AnImpure) :: rest -> unify true s rest
       | AConLE (AnId x, AnPure) :: rest -> unify true (comp s x AnPure) rest
@@ -237,8 +240,6 @@ let unify_acons : type_subst -> annot_constr list -> annot_subst =
       | AConAI (AnImpure, AnImpure, _) :: rest -> unify true s rest
       | AConAI (AnImpure, AnPure, AnId x) :: rest -> unify true (comp s x AnImpure) rest
       | AConAI (AnPure, AnImpure, AnId x) :: rest -> unify true (comp s x AnImpure) rest
-      | AConAI (AnPure, a2, a) :: rest -> unify true s (AConAI (a2, AnPure, a) :: rest)
-      | AConAI (AnImpure, a2, a) :: rest -> unify true s (AConAI (a2, AnImpure, a) :: rest)
       | con :: rest ->
         let r, s, cs = unify false s rest in
         r, s, con :: cs
@@ -272,7 +273,8 @@ let unify_acons : type_subst -> annot_constr list -> annot_subst =
 let infer : term -> term * ty =
   let apply s = term_map (subst_an s) (fun _ t -> t) in
   fun t ->
-    let t, (ty, _, _, _), tcons, acons = recon empty_tyctx t in
+    let t, (ty, _, _, _), tcons, acons = recon t in
     let tsubst = unify_tcons tcons in
-    apply (unify_acons tsubst acons) t, subst_ty tsubst ty
+    let asubst = unify_acons tsubst acons in
+    apply asubst t, subst_ty tsubst ty |> type_map (subst_an asubst) (fun _ tyT -> tyT)
 ;;

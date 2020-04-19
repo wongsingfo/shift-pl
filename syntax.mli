@@ -33,6 +33,9 @@ and term' =
   | TmBool of bool
 
 val term2string : term -> string
+val term2string_with_annot : term -> string
 val type2string : ty -> string
+val type2string_with_annot : ty -> string
+val annot2string : annot -> string
 val freshname : string -> string
 val term2info : term -> info

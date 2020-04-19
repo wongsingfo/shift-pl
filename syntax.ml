@@ -47,12 +47,31 @@ let freshname =
     prefix ^ string_of_int no
 ;;
 
+let annot2string = function
+  | AnId x -> x
+  | AnPure -> "p"
+  | AnImpure -> "i"
+  | AnNone -> ""
+;;
+
+let type2string_with_annot =
+  let spf = Printf.sprintf in
+  let rec go = function
+    | TyBool -> "Bool"
+    | TyNat -> "Nat"
+    | TyId x -> x
+    | TyFun (ty1, ty2, ty3, ty4, a) ->
+      spf "(%s -> %s)@[%s, %s, %s]" (go ty1) (go ty2) (go ty3) (go ty4) (annot2string a)
+  in
+  go
+;;
+
 let type2string =
   let spf = Printf.sprintf in
   let rec top_type ty = fun_type ty
   and fun_type ty =
     match ty with
-    | TyFun (ty1, ty2, _, _, _) -> spf "%s->%s" (atom_type ty1) (fun_type ty2)
+    | TyFun (ty1, ty2, ty3, ty4, a) -> spf "%s -> %s" (atom_type ty1) (fun_type ty2)
     | _ -> atom_type ty
   and atom_type ty =
     match ty with
@@ -62,6 +81,29 @@ let type2string =
     | _ -> spf "(%s)" (top_type ty)
   in
   top_type
+;;
+
+let term2string_with_annot =
+  let spf = Printf.sprintf in
+  let rec go (_, a, t) =
+    let a = annot2string a in
+    match t with
+    | TmVar x -> spf "%s[%s]" x a
+    | TmNat i -> spf "%s[%s]" (string_of_int i) a
+    | TmBool b -> spf "%s[%s]" (string_of_bool b) a
+    | TmAbs (a', x, _, t1) -> spf "(lambda[%s] %s. %s)[%s]" (annot2string a') x (go t1) a
+    | TmFix (a', f, x, _, t1) ->
+      spf "(fix[%s] %s. %s. %s)[%s]" (annot2string a') f x (go t1) a
+    | TmApp (a', t1, t2) -> spf "(%s [%s] %s)[%s]" (go t1) (annot2string a') (go t2) a
+    | TmLet (x, t1, t2) -> spf "(let %s = %s in %s)[%s]" x (go t1) (go t2) a
+    | TmShift (a', k, t1) -> spf "(shift[%s] %s. %s)[%s]" (annot2string a') k (go t1) a
+    | TmReset t1 -> spf "(reset %s)[%s]" (go t1) a
+    | TmIf (t1, t2, t3) -> spf "(if %s then %s else %s)[%s]" (go t1) (go t2) (go t3) a
+    | TmSucc t1 -> spf "(succ %s)[%s]" (go t1) a
+    | TmPred t1 -> spf "(pred %s)[%s]" (go t1) a
+    | TmIsZero t1 -> spf "(iszero %s)[%s]" (go t1) a
+  in
+  go
 ;;
 
 let term2string =
