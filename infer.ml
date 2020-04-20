@@ -1,6 +1,7 @@
 open Syntax
 open Support.Error
 module Dict = Map.Make (String)
+module SSet = Set.Make (String)
 
 (* typing result: T1@[T2,T3,a] *)
 type typing = ty * ty * ty * annot
@@ -21,10 +22,20 @@ type annot_constr =
 
 type type_subst = ty Dict.t
 type annot_subst = annot Dict.t
-type type_scheme = string list * ty
+type type_var_set = SSet.t
+type type_scheme = type_var_set * type_var_set * ty
 type type_context = type_scheme Dict.t
 
 let ident x = x
+
+let id_of_ty = function
+  | TyId x -> x
+  | ty -> raise (Invalid_argument (type2string ty))
+
+and id_of_an = function
+  | AnId x -> x
+  | an -> raise (Invalid_argument (annot2string an))
+;;
 
 let annot_map map_id = function
   | AnId x as a -> map_id x a
@@ -69,9 +80,6 @@ let acon_map map_ty map_an = function
   | AConTI (t1, t2, a) -> AConTI (map_ty t1, map_ty t2, map_an a)
   | AConAI (a1, a2, a) -> AConAI (map_an a1, map_an a2, map_an a)
 ;;
-
-(* empty type context *)
-let empty_tyctx : type_context = Dict.empty
 
 let subst1_ty x tyS = type_map ident (fun y tyT -> if x = y then tyS else tyT)
 
@@ -130,17 +138,45 @@ let unify_tcons : type_constr list -> type_subst =
 
 (* reconstruct the type, and annotate the term *)
 let recon : term -> term * typing * type_constr list * annot_constr list =
+  (* empty type context & empty type variable set *)
+  let empty_tyctx = Dict.empty
+  and empty_tvset = SSet.empty in
   (* fresh variable *)
   let new_a () = AnId (freshname "?a")
   and new_X () = TyId (freshname "?X") in
+  let is_val (_, _, t) =
+    match t with
+    | TmNat _ | TmBool _ | TmVar _ | TmAbs _ | TmFix _ -> true
+    | _ -> false
+  in
   (* context querying & extending *)
   let query fi x ctx =
     match Dict.find_opt x ctx with
     | Some scm -> scm
     | None -> error fi ("cannot find " ^ x ^ " in current type context")
   and extend x scm ctx = Dict.update x (fun _ -> Some scm) ctx in
-  (* type scheme instantiate & generalize *)
-  let inst (xs, ty) : ty = List.fold_left (fun ty x -> subst1_ty x (new_X ()) ty) ty xs in
+  (* type scheme & instantiate & generalize *)
+  let free_tyvars ty =
+    let rec go ty acc =
+      match ty with
+      | TyId x -> SSet.add x acc
+      | TyFun (t1, t2, t3, t4, _) -> go t1 acc |> go t2 |> go t3 |> go t4
+      | _ -> acc
+    in
+    go ty empty_tvset
+  in
+  let inst (_, btv, ty) = SSet.fold (fun x ty -> subst1_ty x (new_X ()) ty) btv ty
+  and raw_scm ty = free_tyvars ty, empty_tvset, ty
+  and make_scm ftv btv ty =
+    ( List.fold_left (fun acc ty -> SSet.add (id_of_ty ty) acc) empty_tvset ftv
+    , List.fold_left (fun acc ty -> SSet.add (id_of_ty ty) acc) empty_tvset btv
+    , ty )
+  and gen_scm ctx ty =
+    let ftv = free_tyvars ty in
+    let btv = Dict.fold (fun x (ftv, _, _) btv -> SSet.diff btv ftv) ctx ftv in
+    let ftv = SSet.diff ftv btv in
+    ftv, btv, ty
+  in
   (* recon *)
   let rec recon ctx t' =
     let fi, _, t = t' in
@@ -167,10 +203,10 @@ let recon : term -> term * typing * type_constr list * annot_constr list =
         | None -> new_X ()
       in
       let tyY, a2 = new_X (), new_a () in
-      let t1, (tyT1, tyR1, tyS1, a1), tc, ac = recon (extend x ([], tyX) ctx) t1 in
-      let ac' = AConLE (a1, a2) :: AConTI (tyR1, tyS1, a1) :: ac in
+      let t1, (tyT1, tyR1, tyS1, a1), tc, ac = recon (extend x (raw_scm tyX) ctx) t1 in
+      let ac = AConLE (a1, a2) :: AConTI (tyR1, tyS1, a1) :: ac in
       let ty = TyFun (tyX, tyT1, tyR1, tyS1, a2) in
-      (fi, AnPure, TmAbs (a2, x, None, t1)), (ty, tyY, tyY, AnPure), tc, ac'
+      (fi, AnPure, TmAbs (a2, x, None, t1)), (ty, tyY, tyY, AnPure), tc, ac
     (* t1 @ t2 *)
     | TmApp (_, t1, t2) ->
       let t1, (tyT1, tyR1, tyS1, a1), tc1, ac1 = recon ctx t1 in
@@ -189,7 +225,99 @@ let recon : term -> term * typing * type_constr list * annot_constr list =
         :: List.append ac1 ac2
       in
       (fi, a, TmApp (a3, t1, t2)), (tyX, tyY, tyS1, a), tc, ac
-    | _ -> error fi ("currently not supporting the term: " ^ term2string t')
+    | TmFix (_, f, x, maybeT, t1) ->
+      let tyX =
+        match maybeT with
+        | Some tyT -> tyT
+        | None -> new_X ()
+      and tyY, tyZ, tyR1', tyS1', a1', a2 =
+        new_X (), new_X (), new_X (), new_X (), new_a (), new_a ()
+      in
+      let tyF = TyFun (tyX, tyY, tyR1', tyS1', a1') in
+      let ctx = ctx |> extend f (raw_scm tyF) |> extend x (raw_scm tyX) in
+      let t1, (tyT1, tyR1, tyS1, a1), tc1, ac1 = recon ctx t1 in
+      let tc = (tyY, tyT1) :: (tyR1', tyR1) :: (tyS1', tyS1) :: tc1 in
+      let ac =
+        AConLE (a1, a2)
+        :: AConTI (tyR1, tyS1, a1)
+        :: AConLE (a1, a1')
+        :: AConLE (a1', a1)
+        :: ac1
+      in
+      let ty = TyFun (tyX, tyY, tyR1, tyS1, a2) in
+      (fi, AnPure, TmFix (a2, f, x, None, t1)), (ty, tyZ, tyZ, AnPure), tc, ac
+    | TmLet (x, v1, t2) when is_val v1 ->
+      let v1, (tyT1, _, _, _), tc1, ac1 = recon ctx v1 in
+      let tyT1' = subst_ty (unify_tcons tc1) tyT1 in
+      let scm = gen_scm ctx tyT1' in
+      let t2, (tyT2, tyR2, tyS2, a2), tc2, ac2 = recon (extend x scm ctx) t2 in
+      let a = new_a () in
+      let tc = List.append tc1 tc2 in
+      let ac = AConLE (a2, a) :: AConTI (tyR2, tyS2, a2) :: List.append ac1 ac2 in
+      (fi, a, TmLet (x, v1, t2)), (tyT2, tyR2, tyS2, a), tc, ac
+    | TmLet (x, t1, t2) ->
+      let t1, (tyT1, tyR1, tyS1, a1), tc1, ac1 = recon ctx t1 in
+      let t2, (tyT2, tyR2, tyS2, a2), tc2, ac2 = recon (extend x (raw_scm tyT1) ctx) t2 in
+      let a = new_a () in
+      let tc = (tyR1, tyS1) :: List.append tc1 tc2 in
+      let ac =
+        AConLE (a1, a)
+        :: AConLE (a2, a)
+        :: AConTI (tyR1, tyS1, a1)
+        :: AConTI (tyR2, tyS2, a2)
+        :: List.append ac1 ac2
+      in
+      (fi, a, TmLet (x, t1, t2)), (tyT2, tyR2, tyS2, a), tc, ac
+    | TmIf (t1, t2, t3) ->
+      let t1, (tyT1, tyR1, tyS1, a1), tc1, ac1 = recon ctx t1 in
+      let t2, (tyT2, tyR2, tyS2, a2), tc2, ac2 = recon ctx t2 in
+      let t3, (tyT3, tyR3, tyS3, a3), tc3, ac3 = recon ctx t3 in
+      let a = new_a () in
+      let tc =
+        (tyR1, tyS2)
+        :: (tyS2, tyS3)
+        :: (tyR2, tyR3)
+        :: (tyT2, tyT3)
+        :: (tyT1, TyBool)
+        :: List.concat [ tc1; tc2; tc3 ]
+      in
+      let ac =
+        List.fold_right
+          (fun (a', tyR, tyS) ls -> AConLE (a', a) :: AConTI (tyR, tyS, a') :: ls)
+          [ a1, tyR1, tyS1; a2, tyR2, tyS2; a3, tyR3, tyS3 ]
+          (List.concat [ ac1; ac2; ac3 ])
+      in
+      (fi, a, TmIf (t1, t2, t3)), (tyT2, tyR2, tyS2, a), tc, ac
+    | TmShift (_, k, t1) ->
+      let tyX, tyY, tau, a2 = new_X (), new_X (), new_X (), new_a () in
+      let tyF = TyFun (tyX, tyY, tau, tau, a2) in
+      let scm = make_scm [ tyX; tyY ] [ tau ] tyF in
+      let t1, (tyT1, tyR1, tyS1, a1), tc, ac = recon (extend k scm ctx) t1 in
+      let ac = AConTI (tyR1, tyS1, a1) :: ac in
+      (fi, AnImpure, TmShift (a2, k, t1)), (tyT1, tyY, tyS1, AnImpure), tc, ac
+    | TmReset t1 ->
+      let tyX = new_X () in
+      let t1, (tyT1, tyR1, tyS1, a1), tc, ac = recon ctx t1 in
+      let ac = AConTI (tyR1, tyS1, a1) :: ac in
+      (fi, AnPure, TmReset t1), (tyS1, tyX, tyX, AnPure), tc, ac
+    | TmSucc t1 ->
+      let t1, (tyT1, tyR1, tyS1, a1), tc, ac = recon ctx t1 in
+      let a = new_a () in
+      let tc = (tyT1, TyNat) :: tc in
+      let ac = AConLE (a1, a) :: AConTI (tyR1, tyS1, a1) :: ac in
+      (fi, a, TmSucc t1), (TyNat, tyR1, tyS1, a), tc, ac
+    | TmPred t1 ->
+      let t1, (tyT1, tyR1, tyS1, a1), tc, ac = recon ctx t1 in
+      let a = new_a () in
+      let tc = (tyT1, TyNat) :: tc in
+      let ac = AConLE (a1, a) :: AConTI (tyR1, tyS1, a1) :: ac in
+      (fi, a, TmPred t1), (TyNat, tyR1, tyS1, a), tc, ac
+    | TmIsZero t1 ->
+      let t1, (tyT1, tyR1, tyS1, a1), tc, ac = recon ctx t1 in
+      let a = new_a () in
+      let tc = (tyT1, TyNat) :: tc in
+      let ac = AConLE (a1, a) :: AConTI (tyR1, tyS1, a1) :: ac in
+      (fi, a, TmIsZero t1), (TyBool, tyR1, tyS1, a), tc, ac
   in
   fun t ->
     let t, ((ty1, ty2, _, _) as typing), tcons, acons = recon empty_tyctx t in
@@ -271,6 +399,12 @@ let unify_acons : type_subst -> annot_constr list -> annot_subst =
 ;;
 
 let infer : term -> term * ty =
+  let subst_an s =
+    annot_map (fun x an ->
+        match Dict.find_opt x s with
+        | Some a -> a
+        | None -> AnPure)
+  in
   let apply s = term_map (subst_an s) (fun _ t -> t) in
   fun t ->
     let t, (ty, _, _, _), tcons, acons = recon t in
