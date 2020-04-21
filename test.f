@@ -1,23 +1,14 @@
-/* Examples for testing */
-
- let x=true in x;
-
-lambda x:Bool. x;
-(lambda x:Bool->Bool. if x false then true else false) 
-  (lambda x:Bool. if x then false else true); 
-
-lambda x:Nat. succ x;
-(lambda x:Nat. succ (succ x)) (succ 0); 
-
-lambda x:A. x;
-
-
-(lambda x:X. lambda y:X->X. y x);
-(lambda x:X->X. x 0) (lambda y:Nat. y); 
-
-
-
-(lambda x. x 0);
-let f = lambda x. x in (f f) (f 0);
-let g = lambda x. 1 in g (g g);
-
+let add = fix add. a b. 
+  if iszero a 
+  then b
+  else add (pred a) (succ b)
+in let mul = fix mul. a b.
+  if iszero a 
+  then 0 
+  else add b (mul (pred a) b)
+in let choose = lambda a b. 
+  shift k in add (k a) (k b)
+in reset 
+    let a = choose 1 2 in 
+    let b = choose 3 4 in 
+    mul a b;

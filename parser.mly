@@ -134,69 +134,71 @@ fun_type:
     { $1 }
 ;
 
+id_ty_pair:
+  | LCID 
+    { $1.v, None }
+  | LCID COLON top_type
+    { $1.v, Some $3 }
+  | USCORE
+    { "_", None }
+  | USCORE COLON top_type
+    { "_", Some $3 }
+;
+
+id_ty_pairs_:
+  | id_ty_pair id_ty_pairs_
+    { $1 :: $2 }
+  | 
+    { [] }
+;
+
+id_ty_pairs:
+  | id_ty_pair id_ty_pairs_ 
+    { $1 :: $2 }
+;
+
 top_term:
-  | top_term_
-    { let fi, t = $1 in fi, AnNone, t }
-  | app_term
+  | LET LCID EQ top_term IN top_term
+    { $1, AnNone, TmLet($2.v, $4, $6) }
+  | LET USCORE EQ top_term IN top_term
+    { $1, AnNone, TmLet("_", $4, $6) }
+  | IF top_term THEN top_term ELSE top_term
+    { $1, AnNone, TmIf($2, $4, $6) }
+  | SHIFT LCID IN top_term
+    { $1, AnNone, TmShift(AnNone, $2.v, $4) }
+  | RESET top_term 
+    { $1, AnNone, TmReset($2) }
+  | LAMBDA id_ty_pairs DOT top_term 
+    { List.fold_right (fun (id, ty) t -> $1, AnNone, TmAbs(AnNone, id, ty, t)) $2 $4 }
+  | FIX LCID DOT id_ty_pair id_ty_pairs_ DOT top_term
+    { let id, ty = $4 in $1, AnNone, TmFix(AnNone, $2.v, id, ty, List.fold_right (fun (id, ty) t -> $1, AnNone, TmAbs(AnNone, id, ty, t)) $5 $7) }
+  | app_term 
     { $1 }
 ;
 
 app_term:
-  | app_term_
-    { let fi, t = $1 in fi, AnNone, t }
+  | SUCC atom_term
+    { $1, AnNone, TmSucc($2) }
+  | PRED atom_term
+    { $1, AnNone, TmPred($2) }
+  | ISZERO atom_term
+    { $1, AnNone, TmIsZero($2) }
+  | app_term atom_term
+    { term2info $1, AnNone, TmApp(AnNone, $1, $2) }
   | atom_term
     { $1 }
 ;
 
-atom_term:
-  | atom_term_
-    { let fi, t = $1 in fi, AnNone, t }
-  | LPAREN top_term RPAREN  
-    { $2 } 
-;
-
-top_term_:
-  | LET LCID EQ top_term IN top_term
-    { $1, TmLet($2.v, $4, $6) }
-  | LET USCORE EQ top_term IN top_term
-    { $1, TmLet("_", $4, $6) }
-  | IF top_term THEN top_term ELSE top_term
-    { $1, TmIf($2, $4, $6) }
-  | SHIFT LCID IN top_term
-    { $1, TmShift(AnNone, $2.v, $4) }
-  | RESET top_term 
-    { $1, TmReset($2) }
-  | LAMBDA LCID DOT top_term 
-    { $1, TmAbs(AnNone, $2.v, None, $4) }
-  | LAMBDA LCID COLON top_type DOT top_term 
-    { $1, TmAbs(AnNone, $2.v, Some $4, $6) }
-  | LAMBDA USCORE COLON top_type DOT top_term 
-    { $1, TmAbs(AnNone, "_", Some $4, $6) }
-  | FIX LCID DOT LCID DOT top_term
-    { $1, TmFix(AnNone, $2.v, $4.v, None, $6) }
-  | FIX LCID DOT LCID COLON top_type DOT top_term
-    { $1, TmFix(AnNone, $2.v, $4.v, Some $6, $8) }
-;
-
-app_term_:
-  | SUCC atom_term
-    { $1, TmSucc($2) }
-  | PRED atom_term
-    { $1, TmPred($2) }
-  | ISZERO atom_term
-    { $1, TmIsZero($2) }
-  | app_term atom_term
-    { term2info $1, TmApp(AnNone, $1, $2) }
-;
-
 /* Atomic terms are ones that never require extra parentheses */
-atom_term_:
+atom_term:
   | LCID 
-    { $1.i, TmVar($1.v) }
+    { $1.i, AnNone, TmVar($1.v) }
   | TRUE
-    { $1, TmBool(true) }
+    { $1, AnNone, TmBool(true) }
   | FALSE
-    { $1, TmBool(false) }
+    { $1, AnNone, TmBool(false) }
   | INTV
-    { $1.i, TmNat($1.v) }
+    { $1.i, AnNone, TmNat($1.v) }
+  | LPAREN top_term RPAREN
+    { $2 }
 ;
