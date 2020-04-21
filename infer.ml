@@ -293,11 +293,13 @@ let recon : term -> term * typing * type_constr list * annot_constr list =
       let tyF = TyFun (tyX, tyY, tau, tau, a2) in
       let scm = make_scm [ tyX; tyY ] [ tau ] tyF in
       let t1, (tyT1, tyR1, tyS1, a1), tc, ac = recon (extend k scm ctx) t1 in
+      let tc = (tyT1, tyR1) :: tc in
       let ac = AConTI (tyR1, tyS1, a1) :: ac in
-      (fi, AnImpure, TmShift (a2, k, t1)), (tyT1, tyY, tyS1, AnImpure), tc, ac
+      (fi, AnImpure, TmShift (a2, k, t1)), (tyX, tyY, tyS1, AnImpure), tc, ac
     | TmReset t1 ->
       let tyX = new_X () in
       let t1, (tyT1, tyR1, tyS1, a1), tc, ac = recon ctx t1 in
+      let tc = (tyT1, tyR1) :: tc in
       let ac = AConTI (tyR1, tyS1, a1) :: ac in
       (fi, AnPure, TmReset t1), (tyS1, tyX, tyX, AnPure), tc, ac
     | TmSucc t1 ->
@@ -319,9 +321,7 @@ let recon : term -> term * typing * type_constr list * annot_constr list =
       let ac = AConLE (a1, a) :: AConTI (tyR1, tyS1, a1) :: ac in
       (fi, a, TmIsZero t1), (TyBool, tyR1, tyS1, a), tc, ac
   in
-  fun t ->
-    let t, ((ty1, ty2, _, _) as typing), tcons, acons = recon empty_tyctx t in
-    t, typing, (ty1, ty2) :: tcons, acons
+  fun t -> recon empty_tyctx (term2info t, AnNone, TmReset t)
 ;;
 
 let unify_acons : type_subst -> annot_constr list -> annot_subst =
