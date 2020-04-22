@@ -48,8 +48,6 @@ let rec cps_term_to_term (t: cps_term) : term = (match t with
 
 let new_k () : string = freshname "?k"
 
-let cps t = t
-
 let is_pure (t: term) : bool = (match t with
     | (_, AnPure, _) -> true
     | _ -> false)
@@ -78,5 +76,9 @@ let rec cps_pure (t: term) : cps_term = (match t with
 and cps_with_k (t: term) (k: cps_term -> cps_term) : cps_term = (match t with 
     | _ -> raise NoRuleApplies)
 
-
+let cps (t: term) : term = 
+  let (t': cps_term) = 
+    if is_pure t then cps_pure(t)
+    else cps_with_k t (fun x -> x)
+  in cps_term_to_term t'
 

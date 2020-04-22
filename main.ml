@@ -13,7 +13,16 @@ let () =
       print_string
         (Syntax.term2string_with_annot term ^ " : " ^ Syntax.type2string_with_annot ty);
       print_newline ();
-      flush stdout
+      flush stdout;
+
+      print_string " ==>";
+
+      let term_after_cps = Cps.cps term in
+      print_string @@
+        Syntax.term2string_with_annot term_after_cps;
+      flush stdout;
+
+      print_string "------------------------\n"
     done
   with
   | Lexer.Eof -> exit 0
