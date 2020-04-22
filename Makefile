@@ -13,7 +13,7 @@
 #                  existing modules.  (The graph is stored in the file
 #                  .depend)
 
-OCAMLCFLAGS = -bin-annot
+OCAMLCFLAGS = -bin-annot -g
 # These are the object files needed to rebuild the main executable file
 #
 OBJS = support.cmo syntax.cmo infer.cmo cps.cmo eval.cmo parser.cmo lexer.cmo main.cmo
@@ -41,7 +41,7 @@ interface: parser.mli lexer.ml $(CMIS)
 # Build an executable typechecker
 f: $(OBJS) main.cmo 
 	@echo Linking $@
-	ocamlc -o $@ $(COMMONOBJS) $(OBJS) 
+	ocamlc -g -o $@ $(COMMONOBJS) $(OBJS) 
 
 # Build an executable typechecker for Windows
 f.exe: $(OBJS) main.cmo 

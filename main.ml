@@ -1,6 +1,8 @@
 let file_name = ref ""
 let usage = Printf.sprintf "usage: %s [file-name]" Sys.argv.(0)
 
+let () = Printexc.record_backtrace true
+
 let () =
   Arg.parse [] (fun f -> file_name := f) usage;
   let lexbuf =
@@ -15,11 +17,13 @@ let () =
       print_newline ();
       flush stdout;
 
-      print_string " ==>";
 
       let term_after_cps = Cps.cps term in
+
+      print_string "=> ";
       print_string @@
-        Syntax.term2string_with_annot term_after_cps;
+        Syntax.term2string term_after_cps;
+      print_newline ();
       flush stdout;
 
       print_string "------------------------\n"
