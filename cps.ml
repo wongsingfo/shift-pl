@@ -52,26 +52,69 @@ let is_pure (t: term) : bool = (match t with
     | (_, AnPure, _) -> true
     | _ -> false)
 
+(* see Figure 8. *)
 let rec cps_pure (t: term) : cps_term = (match t with
     | (_, AnImpure, _) -> raise NoRuleApplies
     | (_, AnId(_), _) -> raise NoRuleApplies
     | (_, AnNone, _) -> raise NoRuleApplies
-    | (_, _, TmVar v) -> Var v
+    (* constant *)
     | (_, _, TmNat v) -> Nat v
     | (_, _, TmBool v) -> Bool v
+    (* variable *)
+    | (_, _, TmVar v) -> Var v
+
+    (* abstraction #1 *)
     | (_, _, TmAbs(AnPure, _1, _2, e1)) when is_pure e1
     -> Abs(_1, _2, cps_pure e1)
+    (* abstraction #2 *)
     | (_, _, TmAbs(AnPure, _1, _2, e1)) when is_pure e1
     -> let k : string = new_k () in
         Abs(_1, _2,
             Abs(k, None, 
                 App(Var(k), cps_pure e1)))
-    | (_, _, TmAbs(AnPure, _1, _2, e1)) when not (is_pure e1)
+    (* abstraction #3 *)
+    | (_, _, TmAbs(AnPure, _1, _2, e1)) when not @@ is_pure e1
     -> let k : string = new_k () in
         Abs(_1, _2,
             Abs(k, None, 
                 cps_with_k e1 (fun v -> App(Var(k), v))))
+
+    (* Fix #1 *)
+    | (_, _, TmFix(AnPure, f, x, ty, e1))
+    -> Fix(f, x, ty, cps_pure e1)
+    (* Fix #2 *)
+    | (_, _, TmFix(AnImpure, f, x, ty, e1)) when is_pure e1
+    -> let k : string = new_k () in
+        Abs(x, ty, Abs(k, None, App(Var(k), 
+          App(Fix(f, x, ty, cps_pure e1), Var(x)))))
+    (* Fix #3 *)
+    | (_, _, TmFix(AnImpure, f, x, ty, e1)) when not @@ is_pure e1
+    -> let k : string = new_k () in
+        Fix(f, x, ty, 
+          Abs(k, None,
+            cps_with_k e1 (fun v -> App(Var(k), v))))
+
+    (* Application *)
+    | (_, _, TmApp(AnPure, e1, e2))
+    -> App(cps_pure e1, cps_pure e2)
+
+    (* Reset #1 *)
+    | (_, _, TmReset(e1)) when is_pure e1
+    -> cps_pure e1
+    (* Reset #2 *)
+    | (_, _, TmReset(e1)) when not @@ is_pure e1
+    -> cps_with_k e1 @@ fun v -> v
+
+    (* let *)
+    | (_, _, TmLet(x, e1, e2)) when is_pure e1 && is_pure e2
+    -> Let(x, cps_pure e1, cps_pure e2)
+
+    (* if *)
+    | (_, _, TmIf(e1, e2, e3)) when is_pure e1 && is_pure e2 && is_pure e3
+    -> If(cps_pure e1, cps_pure e2, cps_pure e3)
+
     | _ -> raise NoRuleApplies)
+
 
 and cps_with_k (t: term) (k: cps_term -> cps_term) : cps_term = (match t with 
     | _ -> raise NoRuleApplies)
