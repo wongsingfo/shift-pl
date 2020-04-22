@@ -113,6 +113,11 @@ let rec cps_pure (t: term) : cps_term = (match t with
     | (_, _, TmIf(e1, e2, e3)) when is_pure e1 && is_pure e2 && is_pure e3
     -> If(cps_pure e1, cps_pure e2, cps_pure e3)
 
+    (* Primitive functions *)
+    | (_, _, TmSucc(e1)) -> Succ(cps_pure e1)
+    | (_, _, TmPred(e1)) -> Pred(cps_pure e1)
+    | (_, _, TmIsZero(e1)) -> IsZero(cps_pure e1)
+
     | _ -> raise NoRuleApplies)
 
 
