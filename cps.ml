@@ -68,13 +68,13 @@ let rec cps_pure (t: term) : cps_term = (match t with
     | (_, _, TmAbs(AnPure, _1, _2, e1)) when is_pure e1
     -> Abs(_1, _2, cps_pure e1)
     (* abstraction #2 *)
-    | (_, _, TmAbs(AnPure, _1, _2, e1)) when is_pure e1
+    | (_, _, TmAbs(AnImpure, _1, _2, e1)) when is_pure e1
     -> let k : string = new_k () in
         Abs(_1, _2,
             Abs(k, None, 
                 App(Var(k), cps_pure e1)))
     (* abstraction #3 *)
-    | (_, _, TmAbs(AnPure, _1, _2, e1)) when not @@ is_pure e1
+    | (_, _, TmAbs(AnImpure, _1, _2, e1)) when not @@ is_pure e1
     -> let k : string = new_k () in
         Abs(_1, _2,
             Abs(k, None, 
