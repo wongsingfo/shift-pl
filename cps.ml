@@ -157,9 +157,11 @@ and cps_with_k (t: term) (k: cps_term -> cps_term) : cps_term = (match t with
     (* if *)
     | (_, _, TmIf(e1, e2, e3)) 
     -> cps_with_k e1 @@ fun v1 ->
-        If(v1, 
-           cps_with_k e2 k,
-           cps_with_k e3 k)
+      let v' : string = new_v () and k' : string = new_k () in
+        Let(k', Abs(v', None, k @@ Var v'),
+          If(v1, 
+             cps_with_k e2 (fun v -> App(Var k', v)),
+             cps_with_k e3 (fun v -> App(Var k', v))))
 
     | _ -> raise NoRuleApplies)
 
