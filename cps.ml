@@ -47,6 +47,7 @@ let rec cps_term_to_term (t: cps_term) : term = (match t with
 ) (* end of match *)
 
 let new_k () : string = freshname "?k"
+let new_v () : string = freshname "?v"
 
 let is_pure (t: term) : bool = (match t with
     | (_, AnPure, _) -> true
@@ -67,13 +68,13 @@ let rec cps_pure (t: term) : cps_term = (match t with
     | (_, _, TmAbs(AnPure, _1, _2, e1)) when is_pure e1
     -> Abs(_1, _2, cps_pure e1)
     (* abstraction #2 *)
-    | (_, _, TmAbs(AnPure, _1, _2, e1)) when is_pure e1
+    | (_, _, TmAbs(AnImpure, _1, _2, e1)) when is_pure e1
     -> let k : string = new_k () in
         Abs(_1, _2,
             Abs(k, None, 
                 App(Var(k), cps_pure e1)))
     (* abstraction #3 *)
-    | (_, _, TmAbs(AnPure, _1, _2, e1)) when not @@ is_pure e1
+    | (_, _, TmAbs(AnImpure, _1, _2, e1)) when not @@ is_pure e1
     -> let k : string = new_k () in
         Abs(_1, _2,
             Abs(k, None, 
@@ -122,6 +123,46 @@ let rec cps_pure (t: term) : cps_term = (match t with
 
 
 and cps_with_k (t: term) (k: cps_term -> cps_term) : cps_term = (match t with 
+    | (_, AnPure, _) -> k @@ cps_pure t
+
+    (* Application *)
+    | (_, _, TmApp(AnPure, e1, e2)) 
+    -> cps_with_k e1 @@ fun v1 -> 
+        cps_with_k e2 @@ fun v2 ->
+          k @@ App(v1, v2)
+    | (_, _, TmApp(AnImpure, e1, e2)) 
+    -> cps_with_k e1 @@ fun v1 -> 
+        cps_with_k e2 @@ fun v2 ->
+          let v : string = new_v () in
+            App(App(v1, v2), Abs(v, None, k @@ Var v))
+
+    (* Shift *)
+    | (_, _, TmShift(AnPure, x, e1))
+    -> let v : string = new_v () in
+        Let(x, Abs(v, None, k @@ Var v), 
+          cps_with_k e1 @@ fun v1 -> v1)
+    | (_, _, TmShift(AnImpure, x, e1))
+    -> let v : string = new_v () and k' : string = new_k () in
+        Let(x, 
+            Abs(v, None, 
+                Abs(k', None, k @@ Var v)),
+            cps_with_k e1 @@ fun v1 -> v1)
+
+    (* let *)
+    | (_, _, TmLet(x, v1, e2)) when is_pure v1
+    -> Let(x, cps_pure v1, cps_with_k e2 k)
+    | (_, _, TmLet(x, v1, e2)) when not @@ is_pure v1
+    -> raise NoRuleApplies
+
+    (* if *)
+    | (_, _, TmIf(e1, e2, e3)) 
+    -> cps_with_k e1 @@ fun v1 ->
+      let v' : string = new_v () and k' : string = new_k () in
+        Let(k', Abs(v', None, k @@ Var v'),
+          If(v1, 
+             cps_with_k e2 (fun v -> App(Var k', v)),
+             cps_with_k e3 (fun v -> App(Var k', v))))
+
     | _ -> raise NoRuleApplies)
 
 let cps (t: term) : term = 
