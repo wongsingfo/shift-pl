@@ -66,10 +66,10 @@ let rec process_command (ctx,nextuvar,constr) cmd = match cmd with
       pr ": ";
       open_hovbox 0;
       printty (applysubst constr'' tyT);
-      force_newline();
+      print_newline ();
       (ctx, nextuvar', constr'')
   | Bind(fi,x,bind) -> 
-       pr x; pr " "; prbinding ctx bind; force_newline();
+       pr x; pr " "; prbinding ctx bind; print_newline ();
       (addbinding ctx x bind, uvargen, constr)
   
 let process_file f (ctx,nextuvar,constr) =
