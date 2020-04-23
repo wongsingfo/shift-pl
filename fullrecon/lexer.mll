@@ -151,8 +151,8 @@ rule main = parse
 | ['0'-'9']+ '.' ['0'-'9']+
     { Parser.FLOATV{i=info lexbuf; v=float_of_string (text lexbuf)} }
 
-| ['A'-'Z' 'a'-'z' '_']
-  ['A'-'Z' 'a'-'z' '_' '0'-'9' '\'']*
+| ['A'-'Z' 'a'-'z' '_' '?']
+  ['A'-'Z' 'a'-'z' '_' '?' '0'-'9' '\'']*
     { createID (info lexbuf) (text lexbuf) }
 
 | ":=" | "<:" | "<-" | "->" | "=>" | "==>"
