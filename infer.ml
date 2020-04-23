@@ -225,6 +225,7 @@ let recon : term -> term * typing * type_constr list * annot_constr list =
         :: List.append ac1 ac2
       in
       (fi, a, TmApp (a3, t1, t2)), (tyX, tyY, tyS1, a), tc, ac
+    (* fix. f. x. t1 *)
     | TmFix (_, f, x, maybeT, t1) ->
       let tyX =
         match maybeT with
@@ -235,17 +236,18 @@ let recon : term -> term * typing * type_constr list * annot_constr list =
       in
       let tyF = TyFun (tyX, tyY, tyR1', tyS1', a1') in
       let ctx = ctx |> extend f (raw_scm tyF) |> extend x (raw_scm tyX) in
-      let t1, (tyT1, tyR1, tyS1, a1), tc1, ac1 = recon ctx t1 in
-      let tc = (tyY, tyT1) :: (tyR1', tyR1) :: (tyS1', tyS1) :: tc1 in
+      let t1, (tyT1, tyR1, tyS1, a1), tc, ac = recon ctx t1 in
+      let tc = (tyY, tyT1) :: (tyR1', tyR1) :: (tyS1', tyS1) :: tc in
       let ac =
         AConLE (a1, a2)
         :: AConTI (tyR1, tyS1, a1)
         :: AConLE (a1, a1')
         :: AConLE (a1', a1)
-        :: ac1
+        :: ac
       in
       let ty = TyFun (tyX, tyY, tyR1, tyS1, a2) in
       (fi, AnPure, TmFix (a2, f, x, None, t1)), (ty, tyZ, tyZ, AnPure), tc, ac
+    (* let x = v1 in t2 *)
     | TmLet (x, v1, t2) when is_val v1 ->
       let v1, (tyT1, _, _, _), tc1, ac1 = recon ctx v1 in
       let tyT1' = subst_ty (unify_tcons tc1) tyT1 in
@@ -255,6 +257,7 @@ let recon : term -> term * typing * type_constr list * annot_constr list =
       let tc = List.append tc1 tc2 in
       let ac = AConLE (a2, a) :: AConTI (tyR2, tyS2, a2) :: List.append ac1 ac2 in
       (fi, a, TmLet (x, v1, t2)), (tyT2, tyR2, tyS2, a), tc, ac
+    (* let x = t1 in t2 *)
     | TmLet (x, t1, t2) ->
       let t1, (tyT1, tyR1, tyS1, a1), tc1, ac1 = recon ctx t1 in
       let t2, (tyT2, tyR2, tyS2, a2), tc2, ac2 = recon (extend x (raw_scm tyT1) ctx) t2 in
@@ -268,6 +271,7 @@ let recon : term -> term * typing * type_constr list * annot_constr list =
         :: List.append ac1 ac2
       in
       (fi, a, TmLet (x, t1, t2)), (tyT2, tyR2, tyS2, a), tc, ac
+    (* if t1 then t2 else t3 *)
     | TmIf (t1, t2, t3) ->
       let t1, (tyT1, tyR1, tyS1, a1), tc1, ac1 = recon ctx t1 in
       let t2, (tyT2, tyR2, tyS2, a2), tc2, ac2 = recon ctx t2 in
@@ -275,7 +279,7 @@ let recon : term -> term * typing * type_constr list * annot_constr list =
       let a = new_a () in
       let tc =
         (tyR1, tyS2)
-        :: (tyS2, tyS3)
+        :: (tyR1, tyS3)
         :: (tyR2, tyR3)
         :: (tyT2, tyT3)
         :: (tyT1, TyBool)
@@ -287,7 +291,8 @@ let recon : term -> term * typing * type_constr list * annot_constr list =
           [ a1, tyR1, tyS1; a2, tyR2, tyS2; a3, tyR3, tyS3 ]
           (List.concat [ ac1; ac2; ac3 ])
       in
-      (fi, a, TmIf (t1, t2, t3)), (tyT2, tyR2, tyS2, a), tc, ac
+      (fi, a, TmIf (t1, t2, t3)), (tyT2, tyR2, tyS1, a), tc, ac
+    (* shift k in t1 *)
     | TmShift (_, k, t1) ->
       let tyX, tyY, tau, a2 = new_X (), new_X (), new_X (), new_a () in
       let tyF = TyFun (tyX, tyY, tau, tau, a2) in
@@ -296,24 +301,28 @@ let recon : term -> term * typing * type_constr list * annot_constr list =
       let tc = (tyT1, tyR1) :: tc in
       let ac = AConTI (tyR1, tyS1, a1) :: ac in
       (fi, AnImpure, TmShift (a2, k, t1)), (tyX, tyY, tyS1, AnImpure), tc, ac
+    (* reset t1 *)
     | TmReset t1 ->
       let tyX = new_X () in
       let t1, (tyT1, tyR1, tyS1, a1), tc, ac = recon ctx t1 in
       let tc = (tyT1, tyR1) :: tc in
       let ac = AConTI (tyR1, tyS1, a1) :: ac in
       (fi, AnPure, TmReset t1), (tyS1, tyX, tyX, AnPure), tc, ac
+    (* succ t1 *)
     | TmSucc t1 ->
       let t1, (tyT1, tyR1, tyS1, a1), tc, ac = recon ctx t1 in
       let a = new_a () in
       let tc = (tyT1, TyNat) :: tc in
       let ac = AConLE (a1, a) :: AConTI (tyR1, tyS1, a1) :: ac in
       (fi, a, TmSucc t1), (TyNat, tyR1, tyS1, a), tc, ac
+    (* pred t1 *)
     | TmPred t1 ->
       let t1, (tyT1, tyR1, tyS1, a1), tc, ac = recon ctx t1 in
       let a = new_a () in
       let tc = (tyT1, TyNat) :: tc in
       let ac = AConLE (a1, a) :: AConTI (tyR1, tyS1, a1) :: ac in
       (fi, a, TmPred t1), (TyNat, tyR1, tyS1, a), tc, ac
+    (* iszero t1 *)
     | TmIsZero t1 ->
       let t1, (tyT1, tyR1, tyS1, a1), tc, ac = recon ctx t1 in
       let a = new_a () in
@@ -325,7 +334,7 @@ let recon : term -> term * typing * type_constr list * annot_constr list =
 ;;
 
 let unify_acons : type_subst -> annot_constr list -> annot_subst =
-  let comp = compose1 subst_an in
+  let comp = compose1 (fun _ an -> an) in
   let pass0 : annot_constr list -> annot_constr list =
     let rec equal ty1 ty2 =
       match ty1, ty2 with
@@ -381,6 +390,7 @@ let unify_acons : type_subst -> annot_constr list -> annot_subst =
     let rec unify reduced s = function
       | [] -> reduced, s, []
       | AConAI (_, _, AnId x) :: rest -> unify true (comp s x AnImpure) rest
+      | AConLE (AnImpure, AnPure) :: _ -> error dummyinfo "error purity constraints"
       | AConLE (AnPure, _) :: rest -> unify true s rest
       | AConLE (_, AnImpure) :: rest -> unify true s rest
       | AConLE (AnId x, AnPure) :: rest -> unify true (comp s x AnPure) rest
