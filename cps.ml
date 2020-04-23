@@ -163,6 +163,14 @@ and cps_with_k (t: term) (k: cps_term -> cps_term) : cps_term = (match t with
              cps_with_k e2 (fun v -> App(Var k', v)),
              cps_with_k e3 (fun v -> App(Var k', v))))
 
+    (* Primitive functions *)
+    | (_, _, TmSucc(e1)) 
+    -> cps_with_k e1 @@ fun v -> k @@ Succ v
+    | (_, _, TmPred(e1))
+    -> cps_with_k e1 @@ fun v -> k @@ Pred v
+    | (_, _, TmIsZero(e1))
+    -> cps_with_k e1 @@ fun v -> k @@ IsZero v
+
     | _ -> raise NoRuleApplies)
 
 let cps (t: term) : term = 
