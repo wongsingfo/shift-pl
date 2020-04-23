@@ -35,6 +35,7 @@ open Syntax
 %token <Support.Error.info> ISZERO
 %token <Support.Error.info> NAT
 %token <Support.Error.info> LAMBDA
+%token <Support.Error.info> FIX
 
 /* Identifier and constant value tokens */
 %token <string Support.Error.withinfo> UCID  /* uppercase-initial */
@@ -174,6 +175,11 @@ Term :
       { fun ctx ->
           let ctx1 = addname ctx "_" in
           TmAbs($1, "_", Some($4 ctx), $6 ctx1) }
+  | FIX LCID DOT LCID DOT Term
+      { fun ctx ->
+          let ctx1 = addname ctx  $2.v in
+          let ctx2 = addname ctx1 $4.v in
+          TmFix($1, $2.v, $4.v, None, $6 ctx2) }
 
 AppTerm :
     ATerm

@@ -23,6 +23,7 @@ type term =
   | TmIsZero of info * term
   | TmAbs of info * string * ty option * term
   | TmApp of info * term * term
+  | TmFix of info * string * string * ty option * term
 
 type binding =
     NameBind 
@@ -88,6 +89,7 @@ let tmmap onvar c t =
   | TmIsZero(fi,t1) -> TmIsZero(fi, walk c t1)
   | TmAbs(fi,x,tyT1,t2) -> TmAbs(fi,x,tyT1,walk (c+1) t2)
   | TmApp(fi,t1,t2) -> TmApp(fi,walk c t1,walk c t2)
+  | TmFix(fi, f, x, ty, t2) -> TmFix(fi, f, x, ty, walk (c+2) t2)
   in walk c t
 
 let termShiftAbove d c t =
@@ -256,6 +258,7 @@ and printtm_ATerm outer ctx t = match t with
        | TmSucc(_,s) -> f (n+1) s
        | _ -> (pr "(succ "; printtm_ATerm false ctx t1; pr ")")
      in f 1 t1
+  | TmFix(fi, f, x, ty, t2) -> pr "fix"
   | t -> pr "("; printtm_Term outer ctx t; pr ")"
 
 let printtm ctx t = printtm_Term true ctx t 

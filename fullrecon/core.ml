@@ -17,6 +17,7 @@ let rec isval ctx t = match t with
   | TmFalse(_) -> true
   | t when isnumericval ctx t  -> true
   | TmAbs(_,_,_,_) -> true
+  | TmFix(_,_,_,_,_) -> true
   | _ -> false
 
 let rec eval1 ctx t = match t with
@@ -49,6 +50,10 @@ let rec eval1 ctx t = match t with
   | TmIsZero(fi,t1) ->
       let t1' = eval1 ctx t1 in
       TmIsZero(fi, t1')
+  | TmApp(_, TmFix(fi, f, x, ty, t1), v2) when isval ctx v2 ->
+      termSubstTop (TmFix(fi, f, x, ty, t1))  @@ 
+      termSubstTop v2 @@
+      t1
   | TmApp(fi,TmAbs(_,x,tyT11,t12),v2) when isval ctx v2 ->
       termSubstTop v2 t12
   | TmApp(fi,v1,t2) when isval ctx v1 ->
@@ -110,6 +115,19 @@ let rec recon ctx nextuvar t =
         let NextUVar(tyX,nextuvar') = nextuvar2() in
         let newconstr = [(tyT1,TyArr(tyT2,TyId(tyX)))] in
         ((TyId(tyX)), nextuvar', List.concat [newconstr; constr1; constr2])
+    | TmFix(fi, f, x, ty, t2) -> 
+        let NextUVar(uf, nextuvar) = nextuvar () in
+        let tyF = TyId(uf) in
+        let ctx = addbinding ctx f (VarBind(tyF)) in
+
+        let NextUVar(u, nextuvar) = nextuvar () in
+        let tyX = TyId(u) in
+        let ctx = addbinding ctx x (VarBind(tyX)) in
+
+        let (tyT2,nextuvar,constr2) = recon ctx nextuvar t2 in
+        let ty = TyArr(tyX, tyT2) in
+        let newconstr = (tyF,ty) in
+        (ty, nextuvar, newconstr :: constr2)
     | TmLet(fi, x, t1, t2) ->
         if not (isval ctx t1) then 
           let (tyT1,nextuvar1,constr1) = recon ctx nextuvar t1 in

@@ -22,6 +22,7 @@ type term =
   | TmIsZero of info * term
   | TmAbs of info * string * ty option * term
   | TmApp of info * term * term
+  | TmFix of info * string * string * ty option * term
 
 type binding =
     NameBind 
