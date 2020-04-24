@@ -119,8 +119,8 @@ let term2string =
     | TmAbs (_, x, Some ty, t1) -> spf "lambda %s:%s. %s" x (type2string ty) (top_term t1)
     | TmAbs (_, x, None, t1) -> spf "lambda %s. %s" x (top_term t1)
     | TmFix (_, f, x, Some ty, t1) ->
-      spf "fix %s.%s:%s. %s" f x (type2string ty) (top_term t1)
-    | TmFix (_, f, x, None, t1) -> spf "fix %s.%s. %s" f x (top_term t1)
+      spf "fix %s. %s:%s. %s" f x (type2string ty) (top_term t1)
+    | TmFix (_, f, x, None, t1) -> spf "fix %s. %s. %s" f x (top_term t1)
     | _ -> app_term t'
   and app_term t' =
     let _, _, t = t' in
