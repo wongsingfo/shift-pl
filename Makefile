@@ -25,7 +25,7 @@ DEPEND += lexer.ml parser.ml
 
 # When "make" is invoked with no arguments, we build an executable 
 # typechecker, after building everything that it depends on
-all: $(DEPEND) $(OBJS) f interface
+all: $(DEPEND) $(OBJS) f interface fullrecon
 
 # On a Windows machine, we do exactly the same except that the executable
 # file that gets built needs to have the extension ".exe"
@@ -84,4 +84,9 @@ clean:
 depend: $(DEPEND) 
 	ocamldep $(INCLUDE) *.mli *.ml > .depend
 
-# 
+# submodule 
+
+fullrecon: FORCE
+	(cd fullrecon && make)
+
+FORCE:

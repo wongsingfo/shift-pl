@@ -21,6 +21,7 @@ let () =
       let term_after_cps = Cps.cps term in
 
       print_string "=> ";
+      print_newline ();
       print_string @@
         Syntax.term2string term_after_cps;
       print_newline ();
