@@ -66,6 +66,9 @@ let rec eval1 ctx t = match t with
       raise NoRuleApplies
 
 let rec eval ctx t =
+  (* for debugging: *)
+  (* printtm_ATerm true ctx t; 
+  print_newline (); *)
   try let t' = eval1 ctx t
       in eval ctx t'
   with NoRuleApplies -> t
@@ -94,6 +97,7 @@ let uvargen =
   let rec f n () = NextUVar("?X" ^ string_of_int n, f (n+1))
   in f 0
 
+(* return ( type, name generator, list of constraints )  *)
 let rec recon ctx nextuvar t =
   match t with
       TmVar(fi,i,_) -> 
@@ -207,3 +211,11 @@ let unify fi ctx msg constr =
         error fi "Unsolvable constraints"
   in
     u constr
+
+let print_constr constr_t = 
+  (let rec u constr =
+    (match constr with
+      | [] -> ()
+      | (a, b) :: rest ->
+        pr "["; printty a; pr " ------ "; printty b; pr "]\n"; u rest)
+  in u constr_t)
