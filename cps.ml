@@ -151,8 +151,11 @@ and cps_with_k (t: term) (k: cps_term -> cps_term) : cps_term = (match t with
     (* let *)
     | (_, _, TmLet(x, v1, e2)) when is_pure v1
     -> Let(x, cps_pure v1, cps_with_k e2 k)
-    | (_, _, TmLet(x, v1, e2)) when not @@ is_pure v1
-    -> raise NoRuleApplies
+    | (fi, _, TmLet(x, v1, e2)) when not @@ is_pure v1
+    -> cps_with_k 
+         (fi, AnImpure, TmApp(AnImpure, 
+            (fi, AnPure, TmAbs(AnImpure, x, None, e2)),
+            v1)) k
 
     (* if *)
     | (_, _, TmIf(e1, e2, e3)) 

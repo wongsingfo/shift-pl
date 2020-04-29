@@ -7,3 +7,4 @@ f
 parser.ml
 parser.mli
 lexer.ml
+fifo

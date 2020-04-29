@@ -16,3 +16,4 @@ val unify : info -> context -> string -> constr -> constr
 val recon : context -> uvargenerator -> term -> (ty * uvargenerator * constr)
 val combineconstr : constr -> constr -> constr
 val applysubst : constr -> ty -> ty
+val print_constr : constr -> unit
