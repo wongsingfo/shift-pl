@@ -79,6 +79,7 @@ lexer.cmi: lexer.ml
 clean:
 	rm -rf lexer.ml parser.ml parser.mli *.o *.cmo *.cmi *.cmt *.cmti parser.output \
 	   f f.exe TAGS *~ *.bak
+	(cd fullrecon && make clean)
 
 # Rebuild intermodule dependencies
 depend: $(DEPEND) 
@@ -87,6 +88,6 @@ depend: $(DEPEND)
 # submodule 
 
 fullrecon: FORCE
-	(cd fullrecon && make)
+	(cd fullrecon && make -s)
 
 FORCE:

@@ -1,10 +1,6 @@
-make
+make -s
 
-mkfifo fifo
-./f test.f \
+./f $1 \
 	| awk 'NR % 4 == 3' \
 	| sed 's/$/;/'      \
-	> fifo &
-
-fullrecon/f fifo
-
+	| ./fullrecon/f /dev/stdin

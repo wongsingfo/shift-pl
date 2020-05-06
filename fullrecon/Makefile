@@ -13,23 +13,12 @@
 #                  existing modules.  (The graph is stored in the file
 #                  .depend)
 
-# Flags for the OCaml compiler
-#
-OCAMLVERSION = $(shell ocamlc -vnum)
-OCAMLVERSION_MAJOR = $(shell echo $(OCAMLVERSION) | cut -f1 -d.)
-OCAMLVERSION_MINOR = $(shell echo $(OCAMLVERSION) | cut -f2 -d.)
-OCAMLVERSION_GE_4_02 := $(shell [ $(OCAMLVERSION_MAJOR) -gt 4 -o \( \
-	$(OCAMLVERSION_MAJOR) -eq 4 -a $(OCAMLVERSION_MINOR) -ge 2 \) ] && echo true)
-
-ifeq ($(OCAMLVERSION_GE_4_02), true)
-	OCAMLCFLAGS = -unsafe-string
-else
-	OCAMLCFLAGS =
-endif
-
+OCAMLCFLAGS = 
 # These are the object files needed to rebuild the main executable file
 #
 OBJS = support.cmo syntax.cmo core.cmo parser.cmo lexer.cmo main.cmo
+CMIS = $(patsubst %.mli, %.cmi, $(wildcard *.mli))
+CMIS += parser.cmi lexer.cmi
 
 # Files that need to be generated from other files
 DEPEND += lexer.ml parser.ml 
@@ -43,7 +32,11 @@ all: $(DEPEND) $(OBJS) f
 windows: $(DEPEND) $(OBJS) f.exe
 
 # Include an automatically generated list of dependencies between source files
+ifeq (.depend, $(wildcard .depend))
 include .depend
+endif
+
+interface: parser.mli lexer.ml $(CMIS)
 
 # Build an executable typechecker
 f: $(OBJS) main.cmo 
@@ -74,18 +67,21 @@ parser.ml parser.mli: parser.mly
 	@chmod -w parser.ml parser.mli
 
 # Generate ML files from a lexer definition file
-%.ml %.mli: %.mll
+lexer.ml: lexer.mll
 	@rm -f $@
 	ocamllex $<
 	@chmod -w $@
 
+lexer.cmi: lexer.ml 
+	ocamlc -c $(OCAMLCFLAGS) $<
+
 # Clean up the directory
-clean::
-	rm -rf lexer.ml parser.ml parser.mli *.o *.cmo *.cmi parser.output \
+clean:
+	rm -rf lexer.ml parser.ml parser.mli *.o *.cmo *.cmi *.cmt *.cmti parser.output \
 	   f f.exe TAGS *~ *.bak
 
 # Rebuild intermodule dependencies
-depend:: $(DEPEND) 
+depend: $(DEPEND) 
 	ocamldep $(INCLUDE) *.mli *.ml > .depend
 
 # 
