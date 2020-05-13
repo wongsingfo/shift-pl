@@ -87,6 +87,7 @@ let type_map map_an map_id =
   let rec map = function
     | TyId x as ty -> map_id x ty
     | TyFun (t1, t2, t3, t4, a) -> TyFun (map t1, map t2, map t3, map t4, map_an a)
+    | TyList ty -> TyList (map ty)
     | ty -> ty
   in
   map
@@ -108,6 +109,8 @@ let term_map map_an map_id =
       | TmSucc t1 -> TmSucc (map t1)
       | TmPred t1 -> TmPred (map t1)
       | TmIsZero t1 -> TmIsZero (map t1)
+      | TmCons (t1, t2) -> TmCons (map t1, map t2)
+      | TmLMatch (t1, t2, hd, tl, t3) -> TmLMatch (map t1, map t2, hd, tl, map t3)
       | _ -> t )
   in
   map
@@ -156,6 +159,7 @@ let unify_tcons : type_constr list -> type_subst * annot_constr list =
   let rec occur x = function
     | TyId y -> x = y
     | TyFun (t1, t2, t3, t4, _) -> occur x t1 || occur x t2 || occur x t3 || occur x t4
+    | TyList ty -> occur x ty
     | _ -> false
   in
   let rec unify constr : type_subst * annot_constr list =
@@ -174,6 +178,7 @@ let unify_tcons : type_constr list -> type_subst * annot_constr list =
       | TyFun (t1, t2, t3, t4, a), TyFun (t1', t2', t3', t4', a') ->
         let s, ac = unify ((t1, t1') :: (t2, t2') :: (t3, t3') :: (t4, t4') :: rest) in
         s, AConEQ (a, a') :: ac
+      | TyList ty, TyList ty' -> unify ((ty, ty') :: rest)
       | _ -> error dummyinfo "unsolvable type constraints")
   in
   unify
@@ -187,9 +192,10 @@ let recon : term -> term * typing * type_constr list * annot_constr list =
   (* fresh variable *)
   let new_a () = AnId (freshname "?a")
   and new_X () = TyId (freshname "?X") in
-  let is_val (_, _, t) =
+  let rec is_val (_, _, t) =
     match t with
-    | TmNat _ | TmBool _ | TmVar _ | TmAbs _ | TmFix _ -> true
+    | TmNat _ | TmBool _ | TmVar _ | TmAbs _ | TmFix _ | TmNil -> true
+    | TmCons (t1, t2) -> is_val t1 && is_val t2
     | _ -> false
   in
   (* context querying & extending *)
@@ -204,6 +210,7 @@ let recon : term -> term * typing * type_constr list * annot_constr list =
       match ty with
       | TyId x -> SSet.add x acc
       | TyFun (t1, t2, t3, t4, _) -> go t1 acc |> go t2 |> go t3 |> go t4
+      | TyList ty -> go ty acc
       | _ -> acc
     in
     go ty empty_tvset
@@ -375,6 +382,42 @@ let recon : term -> term * typing * type_constr list * annot_constr list =
       let tc = (tyT1, TyNat) :: tc in
       let ac = AConLE (a1, a) :: AConTI (tyR1, tyS1, a1) :: ac in
       (fi, a, TmIsZero t1), (TyBool, tyR1, tyS1, a), tc, ac
+    | TmCons (t1, t2) ->
+      let t1, (tyT1, tyR1, tyS1, a1), tc1, ac1 = recon ctx t1 in
+      let t2, (tyT2, tyR2, tyS2, a2), tc2, ac2 = recon ctx t2 in
+      let a = new_a () in
+      let tc = (tyT2, TyList tyT1) :: (tyS2, tyR1) :: List.append tc1 tc2 in
+      let ac =
+        List.fold_right
+          (fun (a', tyR, tyS) ls -> AConLE (a', a) :: AConTI (tyR, tyS, a') :: ls)
+          [ a1, tyR1, tyS1; a2, tyR2, tyS2 ]
+          (List.concat [ ac1; ac2 ])
+      in
+      (fi, a, TmCons (t1, t2)), (tyT2, tyR2, tyS1, a), tc, ac
+    | TmNil ->
+      let tyX, tyY = new_X (), new_X () in
+      (fi, AnPure, TmNil), (TyList tyX, tyY, tyY, AnPure), [], []
+    | TmLMatch (t1, t2, hd, tl, t3) ->
+      let t1, (tyT1, tyR1, tyS1, a1), tc1, ac1 = recon ctx t1 in
+      let t2, (tyT2, tyR2, tyS2, a2), tc2, ac2 = recon ctx t2 in
+      let tyX, a = new_X (), new_a () in
+      let ctx = ctx |> extend hd (raw_scm tyX) |> extend tl (raw_scm (TyList tyX)) in
+      let t3, (tyT3, tyR3, tyS3, a3), tc3, ac3 = recon ctx t3 in
+      let tc =
+        (tyT1, TyList tyX)
+        :: (tyS2, tyR1)
+        :: (tyS3, tyR1)
+        :: (tyR2, tyR3)
+        :: (tyT2, tyT3)
+        :: List.concat [ tc1; tc2; tc3 ]
+      in
+      let ac =
+        List.fold_right
+          (fun (a', tyR, tyS) ls -> AConLE (a', a) :: AConTI (tyR, tyS, a') :: ls)
+          [ a1, tyR1, tyS1; a2, tyR2, tyS2; a3, tyR3, tyS3 ]
+          (List.concat [ ac1; ac2; ac3 ])
+      in
+      (fi, a, TmLMatch (t1, t2, hd, tl, t3)), (tyT2, tyR2, tyS1, a), tc, ac
   in
   fun t -> recon empty_tyctx (term2info t, AnNone, TmReset t)
 ;;
@@ -408,6 +451,7 @@ let unify_acons : type_subst -> annot_constr list -> annot_subst =
             ty_eq && eq, List.append prs an_prs)
           (true, if a = a' then [] else [ a, a' ])
           [ t1, t1'; t2, t2'; t3, t3'; t4, t4' ]
+      | TyList ty, TyList ty' -> equal ty ty'
       | _ -> false, []
     and unify = function
       | [] -> []
