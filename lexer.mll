@@ -28,6 +28,11 @@ let reservedWords = [
   ("shift", fun i -> Parser.SHIFT i);
   ("reset", fun i -> Parser.RESET i);
   ("fix", fun i -> Parser.FIX i); 
+  ("cons", fun i -> Parser.CONS i); 
+  ("lmatch", fun i -> Parser.LMATCH i); 
+  ("case", fun i -> Parser.CASE i); 
+  ("nil", fun i -> Parser.NIL i); 
+  ("List", fun i -> Parser.LIST i); 
   
   (* Symbols *)
   ("_", fun i -> Parser.USCORE i);

@@ -12,6 +12,7 @@ type ty =
   (* TyFun(a, b, c, d) = a/c -> b/d = a -> b @cps[c, d] *)
   | TyFun of ty * ty * ty * ty * annot
   | TyId of string
+  | TyList of ty
 
 type term = info * annot * term'
 
@@ -24,11 +25,15 @@ and term' =
   | TmShift of annot * string * term
   | TmReset of term
   | TmIf of term * term * term
+  | TmCons of term * term
+  (* lmatch t1 { case nil => t2 case hd :: tl => t3 } *)
+  | TmLMatch of term * term * string * string * term
   | TmSucc of term
   | TmPred of term
   | TmIsZero of term
   | TmNat of int
   | TmBool of bool
+  | TmNil
 
 let term2info (fi, _, _) = fi
 
@@ -62,6 +67,7 @@ let type2string_with_annot =
     | TyId x -> x
     | TyFun (ty1, ty2, ty3, ty4, a) ->
       spf "(%s -> %s)@[%s, %s, %s]" (go ty1) (go ty2) (go ty3) (go ty4) (annot2string a)
+    | TyList ty -> spf "List[%s]" (go ty)
   in
   go
 ;;
@@ -78,6 +84,7 @@ let type2string =
     | TyBool -> "Bool"
     | TyNat -> "Nat"
     | TyId x -> x
+    | TyList ty -> spf "List[%s]" (top_type ty)
     | _ -> spf "(%s)" (top_type ty)
   in
   top_type
@@ -102,6 +109,17 @@ let term2string_with_annot =
     | TmSucc t1 -> spf "(succ %s)[%s]" (go t1) a
     | TmPred t1 -> spf "(pred %s)[%s]" (go t1) a
     | TmIsZero t1 -> spf "(iszero %s)[%s]" (go t1) a
+    | TmCons (t1, t2) -> spf "(cons %s %s)[%s]" (go t1) (go t2) a
+    | TmLMatch (t1, t2, hd, tl, t3) ->
+      spf
+        "(lmatch %s { case nil => %s case %s :: %s => %s})[%s]"
+        (go t1)
+        (go t2)
+        hd
+        tl
+        (go t3)
+        a
+    | TmNil -> spf "nil[%s]" a
   in
   go
 ;;
@@ -121,6 +139,14 @@ let term2string =
     | TmFix (_, f, x, Some ty, t1) ->
       spf "fix %s. %s:%s. %s" f x (type2string ty) (top_term t1)
     | TmFix (_, f, x, None, t1) -> spf "fix %s. %s. %s" f x (top_term t1)
+    | TmLMatch (t1, t2, hd, tl, t3) ->
+      spf
+        "lmatch %s { case nil => %s case %s :: %s => %s }"
+        (top_term t1)
+        (top_term t2)
+        hd
+        tl
+        (top_term t3)
     | _ -> app_term t'
   and app_term t' =
     let _, _, t = t' in
@@ -129,6 +155,7 @@ let term2string =
     | TmPred t1 -> spf "pred %s" (atom_term t1)
     | TmIsZero t1 -> spf "iszero %s" (atom_term t1)
     | TmApp (_, t1, t2) -> spf "%s %s" (app_term t1) (atom_term t2)
+    | TmCons (t1, t2) -> spf "cons %s %s" (atom_term t1) (atom_term t2)
     | _ -> atom_term t'
   and atom_term t' =
     let _, _, t = t' in
@@ -136,6 +163,7 @@ let term2string =
     | TmVar x -> x
     | TmBool b -> string_of_bool b
     | TmNat n -> string_of_int n
+    | TmNil -> "nil"
     | _ -> spf "(%s)" (top_term t')
   in
   top_term

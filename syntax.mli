@@ -14,6 +14,7 @@ type ty =
   (* TyFun(T1, T2, T3, T4, a) = T1 -> T2 @cps[T3, T4, a] *)
   | TyFun of ty * ty * ty * ty * annot
   | TyId of string
+  | TyList of ty
 
 type term = info * annot * term'
 
@@ -26,11 +27,15 @@ and term' =
   | TmShift of annot * string * term
   | TmReset of term
   | TmIf of term * term * term
+  | TmCons of term * term
+  (* lmatch t1 { case nil => t2 case hd :: tl => t3 } *)
+  | TmLMatch of term * term * string * string * term
   | TmSucc of term
   | TmPred of term
   | TmIsZero of term
   | TmNat of int
   | TmBool of bool
+  | TmNil
 
 val term2string : term -> string
 val term2string_with_annot : term -> string
