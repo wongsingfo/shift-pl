@@ -1,3 +1,5 @@
+## Ocaml
+
 f
 *.cmi
 *.cmo
@@ -7,4 +9,7 @@ f
 parser.ml
 parser.mli
 lexer.ml
-fifo
+
+# MacOSX
+
+.DS_Store
