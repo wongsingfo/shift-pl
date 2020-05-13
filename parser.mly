@@ -210,8 +210,19 @@ atom_term:
     { $1, AnNone, TmBool(false) }
   | NIL 
     { $1, AnNone, TmNil }
+  | LSQUARE RSQUARE
+    { $1, AnNone, TmNil }
+  | LSQUARE top_term term_list RSQUARE
+    { $1, AnNone, TmCons ($2, $3) }
   | INTV
     { $1.i, AnNone, TmNat($1.v) }
   | LPAREN top_term RPAREN
     { $2 }
+;
+
+term_list:
+  | 
+    { dummyinfo, AnNone, TmNil }
+  | COMMA top_term term_list
+    { $1, AnNone, TmCons ($2, $3) }
 ;

@@ -163,8 +163,18 @@ let term2string =
     | TmVar x -> x
     | TmBool b -> string_of_bool b
     | TmNat n -> string_of_int n
-    | TmNil -> "nil"
+    | TmNil -> "[]"
     | _ -> spf "(%s)" (top_term t')
   in
-  top_term
+  let rec is_list = function
+    | _, _, TmNil -> true
+    | _, _, TmCons (_, tl) -> is_list tl
+    | _ -> false
+  and cons2slist = function
+    | _, _, TmNil -> []
+    | _, _, TmCons (hd, tl) -> term2string hd :: cons2slist tl
+    | _ -> assert false
+  and cons2string t = "[" ^ String.concat ", " (cons2slist t) ^ "]"
+  and term2string t = if is_list t then cons2string t else top_term t in
+  term2string
 ;;
