@@ -164,6 +164,8 @@ id_ty_pairs:
 ;
 
 top_term:
+  | top_term COLONCOLON top_term
+    { $2, AnNone, TmCons ($1, $3) }
   | LET LCID EQ top_term IN top_term
     { $1, AnNone, TmLet($2.v, $4, $6) }
   | LET USCORE EQ top_term IN top_term
