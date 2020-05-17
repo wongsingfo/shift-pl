@@ -7,6 +7,10 @@
 open Support.Error
 open Support.Pervasive
 open Syntax
+
+let infix2opt s = "(" ^ s ^ ")"
+let infix2app fi infix t1 t2 = 
+  fi, AnNone, TmApp(AnNone, (fi, AnNone, TmApp(AnNone, (fi, AnNone, TmVar (infix2opt infix)), t1)), t2)
 %}
 
 /* ---------------------------------------------------------------------- */
@@ -47,6 +51,11 @@ open Syntax
 /* Identifier and constant value tokens */
 %token <string Support.Error.withinfo> UCID  /* uppercase-initial */
 %token <string Support.Error.withinfo> LCID  /* lowercase/symbolic-initial */
+%token <string Support.Error.withinfo> INFIXID
+%token <string Support.Error.withinfo> INFIX0
+%token <string Support.Error.withinfo> INFIX1
+%token <string Support.Error.withinfo> INFIX2
+%token <string Support.Error.withinfo> INFIX3
 %token <int Support.Error.withinfo> INTV
 %token <float Support.Error.withinfo> FLOATV
 %token <string Support.Error.withinfo> STRINGV
@@ -164,12 +173,12 @@ id_ty_pairs:
 ;
 
 top_term:
-  | top_term COLONCOLON top_term
-    { $2, AnNone, TmCons ($1, $3) }
   | LET LCID EQ top_term IN top_term
     { $1, AnNone, TmLet($2.v, $4, $6) }
   | LET USCORE EQ top_term IN top_term
     { $1, AnNone, TmLet("_", $4, $6) }
+  | LET INFIXID EQ top_term IN top_term
+    { $1, AnNone, TmLet($2.v, $4, $6) }
   | IF top_term THEN top_term ELSE top_term
     { $1, AnNone, TmIf($2, $4, $6) }
   | SHIFT LCID IN top_term
@@ -183,17 +192,46 @@ top_term:
     { List.fold_right (fun (id, ty) t -> $1, AnNone, TmAbs(AnNone, id, ty, t)) $2 $4 }
   | FIX LCID DOT id_ty_pair id_ty_pairs_ DOT top_term
     { let id, ty = $4 in $1, AnNone, TmFix(AnNone, $2.v, id, ty, List.fold_right (fun (id, ty) t -> $1, AnNone, TmAbs(AnNone, id, ty, t)) $5 $7) }
-  | app_term 
+  | infix0_term
+    { $1 }
+;
+
+infix0_term:
+  | infix0_term INFIX0 infix1_term
+    { infix2app $2.i $2.v $1 $3 }
+  | infix1_term
+    { $1 }
+;
+
+infix1_term:
+  | cons_term INFIX1 infix1_term
+    { infix2app $2.i $2.v $1 $3 }
+  | cons_term
+    { $1 }
+;
+
+cons_term:
+  | infix2_term COLONCOLON cons_term
+    { $2, AnNone, TmCons($1, $3) }
+  | infix2_term
+    { $1 }
+;
+
+infix2_term:
+  | infix2_term INFIX2 infix3_term
+    { infix2app $2.i $2.v $1 $3 }
+  | infix3_term
+    { $1 }
+;
+
+infix3_term:
+  | infix3_term INFIX3 app_term
+    { infix2app $2.i $2.v $1 $3 }
+  | app_term
     { $1 }
 ;
 
 app_term:
-  | SUCC atom_term
-    { $1, AnNone, TmSucc($2) }
-  | PRED atom_term
-    { $1, AnNone, TmPred($2) }
-  | ISZERO atom_term
-    { $1, AnNone, TmIsZero($2) }
   | CONS atom_term atom_term 
     { $1, AnNone, TmCons($2, $3) }
   | app_term atom_term
@@ -204,7 +242,15 @@ app_term:
 
 /* Atomic terms are ones that never require extra parentheses */
 atom_term:
+  | SUCC atom_term
+    { $1, AnNone, TmSucc($2) }
+  | PRED atom_term
+    { $1, AnNone, TmPred($2) }
+  | ISZERO atom_term
+    { $1, AnNone, TmIsZero($2) }
   | LCID 
+    { $1.i, AnNone, TmVar($1.v) }
+  | INFIXID
     { $1.i, AnNone, TmVar($1.v) }
   | TRUE
     { $1, AnNone, TmBool(true) }

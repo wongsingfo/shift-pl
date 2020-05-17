@@ -151,15 +151,15 @@ let term2string =
   and app_term t' =
     let _, _, t = t' in
     match t with
-    | TmSucc t1 -> spf "succ %s" (atom_term t1)
-    | TmPred t1 -> spf "pred %s" (atom_term t1)
-    | TmIsZero t1 -> spf "iszero %s" (atom_term t1)
     | TmApp (_, t1, t2) -> spf "%s %s" (app_term t1) (atom_term t2)
     | TmCons (t1, t2) -> spf "cons %s %s" (atom_term t1) (atom_term t2)
     | _ -> atom_term t'
   and atom_term t' =
     let _, _, t = t' in
     match t with
+    | TmSucc t1 -> spf "succ %s" (atom_term t1)
+    | TmPred t1 -> spf "pred %s" (atom_term t1)
+    | TmIsZero t1 -> spf "iszero %s" (atom_term t1)
     | TmVar x -> x
     | TmBool b -> string_of_bool b
     | TmNat n -> string_of_int n

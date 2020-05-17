@@ -40,31 +40,18 @@ let reservedWords = [
   ("\"", fun i -> Parser.DQUOTE i);
   ("!", fun i -> Parser.BANG i);
   ("#", fun i -> Parser.HASH i);
-  ("$", fun i -> Parser.TRIANGLE i);
-  ("*", fun i -> Parser.STAR i);
-  ("|", fun i -> Parser.VBAR i);
   (".", fun i -> Parser.DOT i);
   (";", fun i -> Parser.SEMI i);
   (",", fun i -> Parser.COMMA i);
-  ("/", fun i -> Parser.SLASH i);
   (":", fun i -> Parser.COLON i);
   ("::", fun i -> Parser.COLONCOLON i);
   ("=", fun i -> Parser.EQ i);
-  ("==", fun i -> Parser.EQEQ i);
   ("[", fun i -> Parser.LSQUARE i); 
-  ("<", fun i -> Parser.LT i);
   ("{", fun i -> Parser.LCURLY i); 
   ("(", fun i -> Parser.LPAREN i); 
-  ("<-", fun i -> Parser.LEFTARROW i); 
-  ("{|", fun i -> Parser.LCURLYBAR i); 
-  ("[|", fun i -> Parser.LSQUAREBAR i); 
   ("}", fun i -> Parser.RCURLY i);
   (")", fun i -> Parser.RPAREN i);
   ("]", fun i -> Parser.RSQUARE i);
-  (">", fun i -> Parser.GT i);
-  ("|}", fun i -> Parser.BARRCURLY i);
-  ("|>", fun i -> Parser.BARGT i);
-  ("|]", fun i -> Parser.BARRSQUARE i);
 
   (* Special compound symbols: *)
   (":=", fun i -> Parser.COLONEQ i);
@@ -87,6 +74,24 @@ let createID i str =
        Parser.UCID {i=i;v=str}
     else 
        Parser.LCID {i=i;v=str}
+
+let createInfixOpt i str l = 
+  try (Hashtbl.find symbolTable str) i
+  with _ ->
+    if l = 0 then
+       Parser.INFIX0 {i=i;v=str}
+    else if l = 1 then 
+       Parser.INFIX1 {i=i;v=str}
+    else if l = 2 then 
+       Parser.INFIX2 {i=i;v=str}
+    else 
+       Parser.INFIX3 {i=i;v=str}
+
+let createInfixID i str = 
+  match Hashtbl.find_opt symbolTable str with 
+  | Some _ -> error i ("Invalid user-defined infix id: " ^ str)
+  | None -> Parser.INFIXID {i=i;v=str}
+  
 
 let lineno   = ref 1
 and depth    = ref 0
@@ -136,6 +141,12 @@ let extractLineno yytext offset =
   String.sub yytext offset (String.length yytext - offset) |> int_of_string
 }
 
+let infix_char = ['~' '!' '?' '+' '-' '*' '/' '%' '=' '>' '<' '&' '|' ':' '.' '^' '$' '@' ]
+let infix0_prechar = ['=' '<' '>' '|' '&' '$']
+let infix1_prechar = ['@' '^']
+let infix2_prechar = ['+' '-']
+let infix3_prechar = ['*' '/' '%']
+let infix_prechar = infix0_prechar | infix1_prechar | infix2_prechar | infix3_prechar
 
 (* The main body of the lexical analyzer *)
 
@@ -164,15 +175,26 @@ rule main = parse
   ['A'-'Z' 'a'-'z' '_' '0'-'9' '\'']*
     { createID (info lexbuf) (text lexbuf) }
 
-| ":=" | "<:" | "<-" | "->" | "=>" | "==>"
-| "{|" | "|}" | "<|" | "|>" | "[|" | "|]" | "=="
+| '(' infix_prechar infix_char* ')'
+    { createInfixID (info lexbuf) (text lexbuf) }
+
+| "->" | "=>" | "==>" | "::" | ":="
     { createID (info lexbuf) (text lexbuf) }
 
-| ['~' '%' '\\' '+' '-' '&' '|' ':' '@' '`' '$']+
-    { createID (info lexbuf) (text lexbuf) }
+| infix0_prechar infix_char*
+    { createInfixOpt (info lexbuf) (text lexbuf) 0 }
 
-| ['*' '#' '/' '!' '?' '^' '(' ')' '{' '}' '[' ']' '<' '>' '.' ';' '_' ','
-   '=' '\'']
+| infix1_prechar infix_char*
+    { createInfixOpt (info lexbuf) (text lexbuf) 1 }
+
+| infix2_prechar infix_char*
+    { createInfixOpt (info lexbuf) (text lexbuf) 2 }
+
+| infix3_prechar infix_char*
+    { createInfixOpt (info lexbuf) (text lexbuf) 3 }
+    
+| ['#' '!' '?' '(' ')' '{' '}' '[' ']' '.' ';' '_' ',' ':'
+    '\'']
     { createID (info lexbuf) (text lexbuf) }
 
 | "\"" { resetStr(); startLex := info lexbuf; string lexbuf }
