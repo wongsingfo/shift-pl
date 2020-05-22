@@ -11,8 +11,9 @@ let () =
   try
     while true do
       let term = Parser.top_level Lexer.main lexbuf in
-      print_string (Syntax.term2string term); print_newline();
       let term, ty = Infer.infer term in
+      print_string (Syntax.term2string term ^ " : " ^ Syntax.type2string ty); 
+      print_newline();
       print_string
         (Syntax.term2string_with_annot term ^ " : " ^ Syntax.type2string_with_annot ty);
       print_newline ();

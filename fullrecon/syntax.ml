@@ -287,7 +287,12 @@ and printtm_ATerm outer ctx t = match t with
        | TmSucc(_,s) -> f (n+1) s
        | _ -> (pr "(succ "; printtm_ATerm false ctx t1; pr ")")
      in f 1 t1
-  | TmFix(fi, f, x, ty, t2) -> pr "fix"
+  | TmFix(fi, f, x, ty, t2) -> 
+    obox();
+    pr "fix "; pr f; pr ". "; pr x; pr ".";
+    if (small t2) && not outer then break() else print_space();
+    printtm_Term outer ctx t2;
+    cbox();
   | t -> pr "("; printtm_Term outer ctx t; pr ")"
 
 let printtm ctx t = printtm_Term true ctx t 
