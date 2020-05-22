@@ -88,9 +88,9 @@ let createInfixOpt i str l =
        Parser.INFIX3 {i=i;v=str}
 
 let createInfixID i str = 
-  match Hashtbl.find_opt symbolTable str with 
-  | Some _ -> error i ("Invalid user-defined infix id: " ^ str)
-  | None -> Parser.INFIXID {i=i;v=str}
+  try let _ = Hashtbl.find symbolTable str in 
+    error i ("Invalid user-defined infix id: " ^ str)
+  with Not_found -> Parser.INFIXID {i=i;v=str}
   
 
 let lineno   = ref 1

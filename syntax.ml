@@ -41,11 +41,10 @@ let freshname =
   let dict = Hashtbl.create 10 in
   fun prefix ->
     let no =
-      match Hashtbl.find_opt dict prefix with
-      | Some i ->
+      try let i = Hashtbl.find dict prefix in
         Hashtbl.replace dict prefix (i + 1);
         i
-      | None ->
+      with Not_found ->
         Hashtbl.add dict prefix 1;
         0
     in
