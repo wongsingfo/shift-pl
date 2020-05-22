@@ -254,6 +254,8 @@ and printtm_AppTerm outer ctx t = match t with
        pr "pred "; printtm_ATerm false ctx t1
   | TmIsZero(_,t1) ->
        pr "iszero "; printtm_ATerm false ctx t1
+  | TmCons(_, t1, t2) when is_list t ->
+       printtm_List outer ctx t
   | TmCons(_, t1, t2) ->
        printtm_AppTerm outer ctx t1;
        pr " :: ";
@@ -264,6 +266,26 @@ and printtm_AppTerm outer ctx t = match t with
       print_space();
       printtm_ATerm false ctx t2;
       cbox()
+  | t -> printtm_ATerm outer ctx t
+
+and is_list l = (match l with
+    | TmCons(_, t1, t2) ->
+        is_list t2
+    | TmNil(_) -> true
+    | _ -> false)
+
+and printtm_List outer ctx t = match t with
+  | TmCons(_, t1, t2) -> 
+        let rec print_list l = (match l with
+            | TmCons(_, t1, t2) ->
+                    pr ", ";
+                    printtm_ATerm outer ctx t1;
+                    print_list t2
+            | TmNil(_) -> pr "]"
+          ) in
+        pr "[";
+        printtm_ATerm outer ctx t1;
+        print_list t2
   | t -> printtm_ATerm outer ctx t
 
 and printtm_ATerm outer ctx t = match t with

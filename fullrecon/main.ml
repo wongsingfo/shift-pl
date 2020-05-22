@@ -62,10 +62,10 @@ let rec process_command (ctx,nextuvar,constr) cmd = match cmd with
       let constr'' =
         unify fi ctx "Could not simplify constraints" constr' in
 
-      printtm_ATerm true ctx t; 
+      printtm ctx t; 
       print_newline ();
 
-      printtm_ATerm true ctx t'; 
+      printtm ctx t'; 
       (* TODO: support for list type *)
       (* print_break 1 2; *)
       (* pr ": "; *)
