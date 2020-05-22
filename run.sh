@@ -1,3 +1,5 @@
+set -e  # die on error
+
 make -s
 
 ./f $1 \
