@@ -93,6 +93,10 @@ let tmmap onvar c t =
   | TmAbs(fi,x,tyT1,t2) -> TmAbs(fi,x,tyT1,walk (c+1) t2)
   | TmApp(fi,t1,t2) -> TmApp(fi,walk c t1,walk c t2)
   | TmFix(fi, f, x, ty, t2) -> TmFix(fi, f, x, ty, walk (c+2) t2)
+  | TmLMatch(fi, t1, t2, x, y, t3) 
+                  -> TmLMatch(fi, walk c t1, walk c t2, x, y, walk (c+2) t3)
+  | TmNil(fi) -> t
+  | TmCons(fi, t1, t2) -> TmCons(fi, walk c t1, walk c t2)
   in walk c t
 
 let termShiftAbove d c t =
@@ -145,6 +149,10 @@ let tmInfo t = match t with
   | TmIsZero(fi,_) -> fi
   | TmAbs(fi,_,_,_) -> fi
   | TmApp(fi, _, _) -> fi 
+  | TmFix(fi, _, _, _, _) -> fi
+  | TmLMatch(fi, _,_, _,_, _) -> fi
+  | TmNil(fi) -> fi
+  | TmCons(fi, _, _) -> fi
 
 (* ---------------------------------------------------------------------- *)
 (* Printing *)
@@ -227,6 +235,18 @@ let rec printtm_Term outer ctx t = match t with
          if (small t2) && not outer then break() else print_space();
          printtm_Term outer ctx' t2;
          cbox())
+  | TmLMatch(fi, t1, t2, hd, tl, t3) ->
+      obox(); pr "lmatch ";
+      printtm_Term outer ctx t1;
+      pr " {"; break();
+      pr " case nil => ";
+      printtm_Term outer ctx t2; break();
+      (let (ctx',hd') = (pickfreshname ctx hd) in
+        let (ctx',tl') = (pickfreshname ctx' tl) in
+          pr (" case " ^ hd' ^ "::" ^ tl' ^ " => "); 
+          printtm_Term outer ctx' t3; break());
+      pr " }";
+      cbox()
   | t -> printtm_AppTerm outer ctx t
 
 and printtm_AppTerm outer ctx t = match t with
@@ -234,6 +254,10 @@ and printtm_AppTerm outer ctx t = match t with
        pr "pred "; printtm_ATerm false ctx t1
   | TmIsZero(_,t1) ->
        pr "iszero "; printtm_ATerm false ctx t1
+  | TmCons(_, t1, t2) ->
+       printtm_AppTerm outer ctx t1;
+       pr " :: ";
+       printtm_ATerm outer ctx t2
   | TmApp(fi, t1, t2) ->
       obox0();
       printtm_AppTerm false ctx t1;
@@ -255,6 +279,8 @@ and printtm_ATerm outer ctx t = match t with
   | TmFalse(_) -> pr "false"
   | TmZero(fi) ->
        pr "0"
+  | TmNil(_) ->
+       pr "[]"
   | TmSucc(_,t1) ->
      let rec f n t = match t with
          TmZero(_) -> pr (string_of_int n)
