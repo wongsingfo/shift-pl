@@ -291,6 +291,8 @@ and printtm_ATerm outer ctx t = match t with
     obox();
     pr "fix "; pr f; pr ". "; pr x; pr ".";
     if (small t2) && not outer then break() else print_space();
+    let ctx = addname ctx f in 
+    let ctx = addname ctx x in 
     printtm_Term outer ctx t2;
     cbox();
   | t -> pr "("; printtm_Term outer ctx t; pr ")"
