@@ -66,10 +66,11 @@ let rec process_command (ctx,nextuvar,constr) cmd = match cmd with
       print_newline ();
 
       printtm_ATerm true ctx t'; 
-      print_break 1 2;
-      pr ": ";
-      open_hovbox 0;
-      printty (applysubst constr'' tyT);
+      (* TODO: support for list type *)
+      (* print_break 1 2; *)
+      (* pr ": "; *)
+      (* open_hovbox 0; *)
+      (* printty (applysubst constr'' tyT); *)
       print_newline ();
 
       pr "-------------------------------------\n";

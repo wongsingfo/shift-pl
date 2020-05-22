@@ -18,6 +18,8 @@ let rec isval ctx t = match t with
   | t when isnumericval ctx t  -> true
   | TmAbs(_,_,_,_) -> true
   | TmFix(_,_,_,_,_) -> true
+  | TmNil(_) -> true
+  | TmCons(_, t1, t2) -> isval ctx t1 && isval ctx t2
   | _ -> false
 
 let rec eval1 ctx t = match t with
@@ -62,6 +64,20 @@ let rec eval1 ctx t = match t with
   | TmApp(fi,t1,t2) ->
       let t1' = eval1 ctx t1 in
       TmApp(fi, t1', t2)
+  | TmCons(fi, t1, t2) when not @@ isval ctx t1 ->
+      TmCons(fi, eval1 ctx t1, t2)
+  | TmCons(fi, t1, t2) when not @@ isval ctx t2 ->
+      TmCons(fi, t1, eval1 ctx t2)
+  | TmLMatch(fi, t1, t2, _, _, t3) when isval ctx t1 ->
+      (match t1 with
+      | TmNil(fi) -> t2
+      | TmCons(fi, hd, tl) -> 
+           termSubstTop hd @@
+           termSubstTop tl @@
+           t3
+      | _ -> pr "lmatch failed"; raise NoRuleApplies)
+  | TmLMatch(fi, t1, t2, hd, tl, t3) ->
+      TmLMatch(fi, eval1 ctx t1, t2, hd, tl, t3)
   | _ -> 
       raise NoRuleApplies
 
@@ -158,6 +174,8 @@ let rec recon ctx nextuvar t =
         let (tyT3,nextuvar3,constr3) = recon ctx nextuvar2 t3 in
         let newconstr = [(tyT1,TyBool); (tyT2,tyT3)] in
         (tyT3, nextuvar3, List.concat [newconstr; constr1; constr2; constr3])
+    (* TODO: type inference for list *)
+    | _ -> (TyBool, nextuvar, [])
 
 let substinty tyX tyT tyS =
   let rec f tyS = match tyS with
