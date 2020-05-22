@@ -87,8 +87,10 @@ let createInfixOpt i str l =
     else 
        Parser.INFIX3 {i=i;v=str}
 
+let id2infix s = String.sub s 1 (String.length s - 1)
+
 let createInfixID i str = 
-  match Hashtbl.find_opt symbolTable str with 
+  match Hashtbl.find_opt symbolTable (id2infix str) with 
   | Some _ -> error i ("Invalid user-defined infix id: " ^ str)
   | None -> Parser.INFIXID {i=i;v=str}
   

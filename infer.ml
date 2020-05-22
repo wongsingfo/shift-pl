@@ -151,7 +151,10 @@ and subst_acons s = List.map (acon_map ident @@ subst_an s)
 
 (* compose s with [x -> v] or s2 *)
 let compose1 f s1 x v = Dict.update x (fun _ -> Some (f s1 v)) s1
-let compose f s1 s2 = Dict.fold (fun x v s -> Dict.update x (fun _ -> Some (f s1 v)) s) s2
+
+let compose f s1 s2 =
+  Dict.fold (fun x v s -> Dict.update x (fun _ -> Some (f s1 v)) s) s2 s1
+;;
 
 (* unify the type constraints to get the type substitution *)
 let unify_tcons : type_constr list -> type_subst * annot_constr list =
