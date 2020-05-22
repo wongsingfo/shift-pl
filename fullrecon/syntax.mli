@@ -23,6 +23,10 @@ type term =
   | TmAbs of info * string * ty option * term
   | TmApp of info * term * term
   | TmFix of info * string * string * ty option * term
+  (* List Manipulation *)
+  | TmLMatch of info * term * term * string * string * term
+  | TmNil of info
+  | TmCons of info * term * term
 
 type binding =
     NameBind 
