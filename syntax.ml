@@ -41,10 +41,12 @@ let freshname =
   let dict = Hashtbl.create 10 in
   fun prefix ->
     let no =
-      try let i = Hashtbl.find dict prefix in
+      try
+        let i = Hashtbl.find dict prefix in
         Hashtbl.replace dict prefix (i + 1);
         i
-      with Not_found ->
+      with
+      | Not_found ->
         Hashtbl.add dict prefix 1;
         0
     in
@@ -148,11 +150,14 @@ let term2string =
         (top_term t3)
     | _ -> app_term t'
   and app_term t' =
-    let _, _, t = t' in
-    match t with
-    | TmApp (_, t1, t2) -> spf "%s %s" (app_term t1) (atom_term t2)
-    | TmCons (t1, t2) -> spf "cons %s %s" (atom_term t1) (atom_term t2)
-    | _ -> atom_term t'
+    if is_list t'
+    then cons2string t'
+    else (
+      let _, _, t = t' in
+      match t with
+      | TmApp (_, t1, t2) -> spf "%s %s" (app_term t1) (atom_term t2)
+      | TmCons (t1, t2) -> spf "cons %s %s" (atom_term t1) (atom_term t2)
+      | _ -> atom_term t')
   and atom_term t' =
     let _, _, t = t' in
     match t with
@@ -164,16 +169,14 @@ let term2string =
     | TmNat n -> string_of_int n
     | TmNil -> "[]"
     | _ -> spf "(%s)" (top_term t')
-  in
-  let rec is_list = function
+  and is_list = function
     | _, _, TmNil -> true
     | _, _, TmCons (_, tl) -> is_list tl
     | _ -> false
   and cons2slist = function
     | _, _, TmNil -> []
-    | _, _, TmCons (hd, tl) -> term2string hd :: cons2slist tl
+    | _, _, TmCons (hd, tl) -> top_term hd :: cons2slist tl
     | _ -> assert false
-  and cons2string t = "[" ^ String.concat ", " (cons2slist t) ^ "]"
-  and term2string t = if is_list t then cons2string t else top_term t in
-  term2string
+  and cons2string t = "[" ^ String.concat ", " (cons2slist t) ^ "]" in
+  top_term
 ;;
