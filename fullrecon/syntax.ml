@@ -276,15 +276,16 @@ and is_list l = (match l with
 
 and printtm_List outer ctx t = match t with
   | TmCons(_, t1, t2) -> 
+        let element_printing = printtm_Term in
         let rec print_list l = (match l with
             | TmCons(_, t1, t2) ->
                     pr ", ";
-                    printtm_ATerm outer ctx t1;
+                    element_printing outer ctx t1;
                     print_list t2
             | TmNil(_) -> pr "]"
           ) in
         pr "[";
-        printtm_ATerm outer ctx t1;
+        element_printing outer ctx t1;
         print_list t2
   | t -> printtm_ATerm outer ctx t
 

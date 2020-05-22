@@ -28,3 +28,5 @@ in reset
     let a = choose 1 2 in 
     let b = choose 3 4 in 
     [a + b];
+
+[[1], [2, 3]];
