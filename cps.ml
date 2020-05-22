@@ -18,6 +18,11 @@ type cps_term =
   | IsZero of cps_term
   | Nat of int
   | Bool of bool
+  (***** support for list *******)
+  | Cons of cps_term * cps_term
+  | Nil
+  (* lmatch t1 { case nil => t2 case hd :: tl => t3 } *)
+  | LMatch of cps_term * cps_term * string * string * cps_term
 
 let rec cps_term_to_term (t: cps_term) : term = (match t with
     | Var(s) -> dummyinfo, AnNone, 
@@ -44,6 +49,13 @@ let rec cps_term_to_term (t: cps_term) : term = (match t with
         TmIsZero(cps_term_to_term t')
     | Nat(v) -> dummyinfo, AnNone, TmNat(v)
     | Bool(v) -> dummyinfo, AnNone, TmBool(v)
+
+    (***** support for list *******)
+    | Cons(t1, t2) -> dummyinfo, AnNone, 
+        TmCons(cps_term_to_term t1, cps_term_to_term t2)
+    | Nil -> dummyinfo, AnNone, TmNil
+    | LMatch(a, b, c, d, e) -> dummyinfo, AnNone,
+        TmLMatch(cps_term_to_term a, cps_term_to_term b, c, d, cps_term_to_term e)
 ) (* end of match *)
 
 let new_k () : string = freshname "?k"
@@ -118,6 +130,14 @@ let rec cps_pure (t: term) : cps_term = (match t with
     | (_, _, TmSucc(e1)) -> Succ(cps_pure e1)
     | (_, _, TmPred(e1)) -> Pred(cps_pure e1)
     | (_, _, TmIsZero(e1)) -> IsZero(cps_pure e1)
+
+    (* List Manipulation *)
+    | (_, _, TmCons(e1, e2))
+        -> Cons(cps_pure e1, cps_pure e2)
+    | (_, _, TmNil)
+        -> Nil
+    | (_, _, TmLMatch (e1, e2, hd, tl, e3))
+        -> LMatch(cps_pure e1, cps_pure e2, hd, tl, cps_pure e3)
 
     | _ -> raise NoRuleApplies)
 

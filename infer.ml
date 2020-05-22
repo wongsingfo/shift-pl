@@ -1,6 +1,22 @@
 open Syntax
 open Support.Error
-module Dict = Map.Make (String)
+open Map
+
+module Dict = struct
+  module Mod = Map.Make (String)
+
+  include Mod
+
+  let find_opt key m = 
+    try let result = Mod.find key m in
+       Some(result)
+    with Not_found -> None
+
+  let update x f m = 
+    match f (find_opt x m) with
+    | None -> Mod.remove x m
+    | Some(z) -> add x z m
+end
 module SSet = Set.Make (String)
 
 (* typing result: T1@[T2,T3,a] *)

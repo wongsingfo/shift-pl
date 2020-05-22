@@ -90,10 +90,10 @@ let createInfixOpt i str l =
 let id2infix s = String.sub s 1 (String.length s - 1)
 
 let createInfixID i str = 
-  match Hashtbl.find_opt symbolTable (id2infix str) with 
-  | Some _ -> error i ("Invalid user-defined infix id: " ^ str)
-  | None -> Parser.INFIXID {i=i;v=str}
-  
+  try let _ = Hashtbl.find symbolTable (id2infix str) in 
+    error i ("Invalid user-defined infix id: " ^ str)
+  with Not_found -> Parser.INFIXID {i=i;v=str}
+
 
 let lineno   = ref 1
 and depth    = ref 0

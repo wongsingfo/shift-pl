@@ -37,6 +37,12 @@ open Syntax
 %token <Support.Error.info> LAMBDA
 %token <Support.Error.info> FIX
 
+/* List Manipulation Keyword tokens */
+%token <Support.Error.info> LMATCH
+%token <Support.Error.info> CASE
+%token <Support.Error.info> NIL
+%token <Support.Error.info> CONS
+
 /* Identifier and constant value tokens */
 %token <string Support.Error.withinfo> UCID  /* uppercase-initial */
 %token <string Support.Error.withinfo> LCID  /* lowercase/symbolic-initial */
@@ -180,26 +186,35 @@ Term :
           let ctx1 = addname ctx  $2.v in
           let ctx2 = addname ctx1 $4.v in
           TmFix($1, $2.v, $4.v, None, $6 ctx2) }
+  | LMATCH Term LCURLY CASE NIL DARROW Term CASE LCID COLONCOLON LCID DARROW Term RCURLY
+      { fun ctx -> 
+          let ctx1 = addname ctx  $9.v in 
+          let ctx2 = addname ctx1 $11.v in
+          TmLMatch($1, $2 ctx, $7 ctx, $9.v, $11.v, $13 ctx2) }
+
 
 AppTerm :
     ATerm
       { $1 }
+  | AppTerm ATerm
+      { fun ctx ->
+          let e1 = $1 ctx in
+          let e2 = $2 ctx in
+          TmApp(tmInfo e1,e1,e2) }
+  | CONS ATerm ATerm 
+      { fun ctx -> 
+          TmCons($1, $2 ctx, $3 ctx) }
+
+/* Atomic terms are ones that never require extra parentheses */
+ATerm :
+    LPAREN Term RPAREN  
+      { $2 } 
   | SUCC ATerm
       { fun ctx -> TmSucc($1, $2 ctx) }
   | PRED ATerm
       { fun ctx -> TmPred($1, $2 ctx) }
   | ISZERO ATerm
       { fun ctx -> TmIsZero($1, $2 ctx) }
-  | AppTerm ATerm
-      { fun ctx ->
-          let e1 = $1 ctx in
-          let e2 = $2 ctx in
-          TmApp(tmInfo e1,e1,e2) }
-
-/* Atomic terms are ones that never require extra parentheses */
-ATerm :
-    LPAREN Term RPAREN  
-      { $2 } 
   | LCID 
       { fun ctx ->
           TmVar($1.i, name2index $1.i ctx $1.v, ctxlength ctx) }
@@ -213,6 +228,10 @@ ATerm :
               0 -> TmZero($1.i)
             | n -> TmSucc($1.i, f (n-1))
           in f $1.v }
+  | LSQUARE RSQUARE
+      { fun ctx -> TmNil($1) }
+  | NIL 
+      { fun ctx -> TmNil($1) }
 
 
 /*   */

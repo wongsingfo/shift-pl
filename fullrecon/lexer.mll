@@ -25,6 +25,11 @@ let reservedWords = [
   ("Nat", fun i -> Parser.NAT i);
   ("lambda", fun i -> Parser.LAMBDA i);
   ("fix", fun i -> Parser.FIX i);
+
+  ("lmatch", fun i -> Parser.LMATCH i);
+  ("case", fun i -> Parser.CASE i);
+  ("nil", fun i -> Parser.NIL i);
+  ("cons", fun i -> Parser.CONS i);
   
   (* Symbols *)
   ("_", fun i -> Parser.USCORE i);
@@ -72,7 +77,7 @@ let (symbolTable : (string,buildfun) Hashtbl.t) = Hashtbl.create 1024
 let _ =
   List.iter (fun (str,f) -> Hashtbl.add symbolTable str f) reservedWords
 
-let createID i str =
+let createID i str : Parser.token =
   try (Hashtbl.find symbolTable str) i
   with _ ->
     if (String.get str 0) >= 'A' && (String.get str 0) <= 'Z' then
@@ -128,6 +133,14 @@ let extractLineno yytext offset =
   String.sub yytext offset (String.length yytext - offset) |> int_of_string
 }
 
+(* support for infix operations *)
+
+let infix_char = ['~' '!' '?' '+' '-' '*' '/' '%' '=' '>' '<' '&' '|' ':' '.' '^' '$' '@' ]
+let infix0_prechar = ['=' '<' '>' '|' '&' '$']
+let infix1_prechar = ['@' '^']
+let infix2_prechar = ['+' '-']
+let infix3_prechar = ['*' '/' '%']
+let infix_prechar = infix0_prechar | infix1_prechar | infix2_prechar | infix3_prechar 
 
 (* The main body of the lexical analyzer *)
 
@@ -154,6 +167,9 @@ rule main = parse
 
 | ['A'-'Z' 'a'-'z' '_' '?']
   ['A'-'Z' 'a'-'z' '_' '?' '0'-'9' '\'']*
+    { createID (info lexbuf) (text lexbuf) }
+
+| '(' infix_prechar infix_char* ')'
     { createID (info lexbuf) (text lexbuf) }
 
 | ":=" | "<:" | "<-" | "->" | "=>" | "==>"
