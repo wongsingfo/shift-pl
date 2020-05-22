@@ -150,14 +150,15 @@ let term2string =
         (top_term t3)
     | _ -> app_term t'
   and app_term t' =
-    if is_list t'
-    then cons2string t'
-    else (
-      let _, _, t = t' in
-      match t with
-      | TmApp (_, t1, t2) -> spf "%s %s" (app_term t1) (atom_term t2)
-      | TmCons (t1, t2) -> spf "cons %s %s" (atom_term t1) (atom_term t2)
-      | _ -> atom_term t')
+    (* if is_list t'
+       then cons2string t'
+       else ( *)
+    let _, _, t = t' in
+    match t with
+    | TmApp (_, t1, t2) -> spf "%s %s" (app_term t1) (atom_term t2)
+    | TmCons (t1, t2) -> spf "cons %s %s" (atom_term t1) (atom_term t2)
+    | _ -> atom_term t'
+  (* ) *)
   and atom_term t' =
     let _, _, t = t' in
     match t with
@@ -169,14 +170,15 @@ let term2string =
     | TmNat n -> string_of_int n
     | TmNil -> "[]"
     | _ -> spf "(%s)" (top_term t')
-  and is_list = function
-    | _, _, TmNil -> true
-    | _, _, TmCons (_, tl) -> is_list tl
-    | _ -> false
-  and cons2slist = function
-    | _, _, TmNil -> []
-    | _, _, TmCons (hd, tl) -> top_term hd :: cons2slist tl
-    | _ -> assert false
-  and cons2string t = "[" ^ String.concat ", " (cons2slist t) ^ "]" in
+    (* and is_list = function
+         | _, _, TmNil -> true
+         | _, _, TmCons (_, tl) -> is_list tl
+         | _ -> false
+       and cons2slist = function
+         | _, _, TmNil -> []
+         | _, _, TmCons (hd, tl) -> top_term hd :: cons2slist tl
+         | _ -> assert false
+       and cons2string t = "[" ^ String.concat ", " (cons2slist t) ^ "]" *)
+  in
   top_term
 ;;
