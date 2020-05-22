@@ -19,7 +19,7 @@ let () =
       flush stdout;
 
 
-      (* let term_after_cps = Cps.cps term in
+      let term_after_cps = Cps.cps term in
 
       print_string "=> ";
       print_newline ();
@@ -28,7 +28,7 @@ let () =
       print_newline ();
       flush stdout;
 
-      print_string "------------------------\n" *)
+      print_string "------------------------\n"
     done
   with
   | Lexer.Eof -> exit 0
