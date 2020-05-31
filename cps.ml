@@ -186,6 +186,18 @@ and cps_with_k (t: term) (k: cps_term -> cps_term) : cps_term = (match t with
              cps_with_k e2 (fun v -> App(Var k', v)),
              cps_with_k e3 (fun v -> App(Var k', v))))
 
+    (* List Manipulation *)
+    | (_, _, TmCons(e1, e2))
+    -> cps_with_k e1 @@ fun v1 ->
+       cps_with_k e2 @@ fun v2 ->
+          k (Cons(v1, v2))
+    | (_, _, TmLMatch (e1, e2, hd, tl, e3))
+    -> cps_with_k e1 @@ fun v1 ->
+        let v' : string = new_v () and k' : string = new_k () in
+        Let(k', Abs(v', None, k @@ Var v'),
+            LMatch(v1, cps_with_k e2 (fun v -> App(Var k', v)), 
+                hd, tl, cps_with_k e3 (fun v -> App(Var k', v)) ))
+
     (* Primitive functions *)
     | (_, _, TmSucc(e1)) 
     -> cps_with_k e1 @@ fun v -> k @@ Succ v
