@@ -4,11 +4,11 @@ in
 
 
 try (lambda throws.
-	   if true then 
-	   		throws 213
-	   else 
-	   		233)
+       if true then
+            throws 213
+       else 
+            233)
     (lambda catch_error.
-    	666);
+        666);
 
 

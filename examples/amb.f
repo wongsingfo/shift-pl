@@ -29,4 +29,4 @@ in reset
     if equal result 12 then 
       success [a, b]
     else 
-      fail [];
+      fail false;
