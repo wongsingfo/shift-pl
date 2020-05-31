@@ -35,13 +35,14 @@ and term' =
   | TmBool of bool
 ```
 
-
 # CPS is all you need
+
+[toc]
 
 
 语言的设计目标，设计思想，形式定义，性质证明，代码使用方法
 
-## Synopsis:
+## Synopsis
 
 ```
 let (+) = fix add. a b. 
@@ -109,9 +110,9 @@ t:= & & terms:\\
 & A@^a A & application\\
 & \text{cons}\ A\ A & list\ \text{cons}truction\\
 & \text{lmatch}\ A\ \{\text{case}\ \text{nil}\Rightarrow A\ \text{case}\ x::x\Rightarrow A\} & list\ elimination\\
-& \text{let}\ x=A\ in\ A & \text{let}\ binding\\
+& \text{let}\ x=A\ \text{in}\ A & \text{let}\ binding\\
 & \text{reset}\ A & context\ delimination\\
-& \text{shift}^a\ x\ in\ A & context\ capturing\\
+& \text{shift}^a\ x\ \text{in}\ A & context\ capturing\\
 \ \\
 T:= & & types:\\
 & X & type\ variable\\
@@ -172,7 +173,7 @@ $$
 \end{aligned}
 $$
 
-### Application
+#### Application
 
 $$
 \frac{
@@ -185,7 +186,7 @@ $$
 }
 $$
 
-### Fixpoint
+#### Fixpoint
 
 $$
 \begin{aligned}
@@ -254,7 +255,7 @@ $$
     TC'=TC\cup\{T_1=R_1\}\\
     AC'=AC\cup\{R_1\ne S_1\Rightarrow a_1=i\}
 }{
-    \Gamma\vdash (sh\text{if}t^{a_2}\ k\ in\ t_1^{a_1})^i:X@[Y,S_1,i];[TC',AC']
+    \Gamma\vdash (\text{shift}^{a_2}\ k\ in\ t_1^{a_1})^i:X@[Y,S_1,i];[TC',AC']
 }
 \end{aligned}
 $$
@@ -268,12 +269,12 @@ $$
 	TC'=TC\cup\{T_1=R_1\}\\
     AC'=AC\cup\{R_1\ne S_1\Rightarrow a_1=i\}
 }{
-    \Gamma\vdash (reset\ t_1^{a_1})^p:S_1@[X,X,p];[TC',AC']
+    \Gamma\vdash (\text{reset}\ t_1^{a_1})^p:S_1@[X,X,p];[TC',AC']
 }
 \end{aligned}
 $$
 
-### Succ/Pred
+#### Succ/Pred
 
 $$
 \begin{aligned}
