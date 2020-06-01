@@ -125,52 +125,131 @@ $$
 
 ### Evalution Rules
 
-#### shift
+Abstract machine state: $t\ |\ [C,K]$
+
++ $t$: Term
++ $C$: Inner <u>C</u>ontext
++ $K$: Outer C(<u>K</u>)ontext
+
+#### Shift
 
 $$
-shift\ x\ in\ t\ |\ [C_{inner}, C_{outer}]\rightarrow [x\mapsto\lambda v.reset(C_{inner}\ v)]t\ |\ [id,C_{outer}]
+\text{shift}\ x\ \text{in}\ t\ |\ [C, K]\rightarrow [x\mapsto\lambda v.\text{reset}\ (C\ v)]t\ |\ [\emptyset,K]
 $$
 
-#### reset
+#### Reset
 
 $$
-reset\ t \ |\ [C_i,C_o]\rightarrow t\ |\ [id,C_i\leadsto C_o]
+\text{reset}\ t \ |\ [C,K]\rightarrow t\ |\ [\emptyset,C\leadsto K]
 $$
 
-#### application
-
-$$
-\begin{aligned}
-& t_1\ t_2\ |\ [C_i,C_o]\rightarrow t_1\ |\ [(\lambda v_1.v_1\ t_2)\leadsto C_i,C_o]\\
-& v_1\ t_2\ |\ [C_i,C_o]\rightarrow t_2\ |\ [(\lambda v_2.v_1\ v_2)\leadsto C_i, C_o]\\
-& (\lambda x.t_1)\ v_2\ |\ [C_i,C_o]\rightarrow [x\mapsto v_2]t_1\ |\ [C_i,C_o]\\
-\end{aligned}
-$$
-
-#### value
+#### Application
 
 $$
 \begin{aligned}
-& v\ |\ [F\leadsto C_i,C_o]\rightarrow F(v)\ |\ [C_i,C_o]\\
-& v\ |\ [id, C_i\leadsto C_o]\rightarrow v\ |\ [C_i,C_o]\\
+& t_1\ t_2\ |\ [C,K]\rightarrow t_1\ |\ [(v_1\mapsto v_1\ t_2)\leadsto C,K]\\
+& v_1\ t_2\ |\ [C,K]\rightarrow t_2\ |\ [(v_2\mapsto v_1\ v_2)\leadsto C, K]\\
+& (\lambda x.t_1)\ v_2\ |\ [C,K]\rightarrow [x\mapsto v_2]t_1\ |\ [C,K]\\
 \end{aligned}
 $$
 
-For every top-level term $t$, there's:
+#### Value
+
 $$
 \begin{aligned}
-& t\ |\ [id,id]\rightarrow^* t'\ |\ [C_i,C_o]\\
-& \Rightarrow t\rightarrow^* C_o(C_i(t'))
+& v\ |\ [F\leadsto C,K]\rightarrow F(v)\ |\ [C,K]\\
+& v\ |\ [\emptyset, C\leadsto K]\rightarrow v\ |\ [C,K]\\
 \end{aligned}
 $$
-PS: $id(x)=x, (A\leadsto B)(x)=B(A(x))$
 
-And for a evaluation snapshot $t\ |\ [C_i,C_o]$, there's:
+PS: $\emptyset(x)=x,\ (A\leadsto B)(x)=B(A(x))$
+
+
+
+Suppose $t\ |\ [C,K]$ will be finally evaluated to $v\ |\ [\emptyset, \emptyset]$. 
+
+If $t\ |\ [C, K]\rightarrow t'\ |\ [C',K']\quad C:T_1\rightarrow T_2\quad K: T_3\rightarrow T_4\quad C' :T_1'\rightarrow T_2'\quad K': T_3'\rightarrow T_4'$, 
+
+then there must be $T_4=T_4'$, but $T_1=T_1',T_2=T_2',T_3=T_3'$ are not guaranteed. 
+
+So the typing information of $t$ must contain $T_1$, $T_2$, $T_3$; we call them "**type of $t$**", "**answer type before $t$'s evaluation**", "**answer type after $t$'s evaluation**" respectively. 
+
+
+
+### Typing Rules (without annotation)
+
+type assumption $\Gamma\vdash t:T@[R,S];TC$:
+
++ $\Gamma$: Type context
++ $T$: Type of $t$
++ $R$: Answer type before $t$'s evaluation
++ $S$: Answer type after $t$'s evaluation
++ $TC$: <u>T</u>ype-<u>C</u>ontraints
+
+#### Variable
+
 $$
-\frac{C_i:T_1\rightarrow T_2\quad C_o:T_2\rightarrow T_3}{t:T_1@[T_2,T_3]}
+\frac{
+	x:T\in \Gamma\quad I=\text{inst}(T)\quad X=\text{fresh}()
+}{
+	\Gamma\vdash x:I@[X,X];\emptyset
+}
 $$
 
-### Typing Rules
+#### Abstraction
+
+$$
+\begin{aligned}
+\frac{
+	X,Y=\text{fresh}()\quad\Gamma,x:X\vdash t_1:T_1@[R_1,S_1];TC
+}{
+	\Gamma\vdash (\lambda x.t_1):(X\rightarrow T_1@[R_1,S_1])@[Y,Y];TC
+}
+\end{aligned}
+$$
+
+#### Application
+
+$$
+\frac{
+	\Gamma\vdash t_1:T_1@[R_1,S_1];TC_1\quad \Gamma\vdash t_2:T_2@[R_2,S_2];TC_2\\
+	X,Y=\text{fresh}()\\
+	TC=TC_1\cup TC_2\cup\{T_1=T_2\rightarrow X@[Y,R_2],\ R_1=S_2\}
+}{
+	\Gamma\vdash (t_1\ t_2):X@[Y,S_1];TC
+}
+$$
+
+#### Shift
+
+$$
+\begin{aligned}
+\frac{
+    X,Y=\text{fresh}()\\
+    \Gamma,k:\forall \tau.(X\rightarrow Y@[\tau,\tau])\vdash t_1:T_1@[R_1,S_1];TC\\
+    TC'=TC\cup\{T_1=R_1\}
+}{
+    \Gamma\vdash (\text{shift}\ k\ \text{in}\ t_1):X@[Y,S_1];TC'
+}
+\end{aligned}
+$$
+
+#### Reset
+
+$$
+\begin{aligned}
+\frac{
+	X=\text{fresh}()\quad \Gamma\vdash t_1:T_1@[R_1,S_1];TC\\
+	TC'=TC\cup\{T_1=R_1\}
+}{
+    \Gamma\vdash (\text{reset}\ t_1):S_1@[X,X];TC'
+}
+\end{aligned}
+$$
+
+PS: $\text{inst}(T)$ means instantiate $T$'s binding variable (for example, $\alpha$ in type scheme $\forall \alpha. \alpha\rightarrow \alpha$)
+
+### Typing Rules (with annotation)
 
 type assumption $\Gamma\vdash t:T@[R,S,a];[TC,AC]$：
 
