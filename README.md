@@ -125,7 +125,50 @@ $$
 
 ### Evalution Rules
 
+#### shift
 
+$$
+shift\ x\ in\ t\ |\ [C_{inner}, C_{outer}]\rightarrow [x\mapsto\lambda v.reset(C_{inner}\ v)]t\ |\ [id,C_{outer}]
+$$
+
+#### reset
+
+$$
+reset\ t \ |\ [C_i,C_o]\rightarrow t\ |\ [id,C_i\leadsto C_o]
+$$
+
+#### application
+
+$$
+\begin{aligned}
+& t_1\ t_2\ |\ [C_i,C_o]\rightarrow t_1\ |\ [(\lambda v_1.v_1\ t_2)\leadsto C_i,C_o]\\
+& v_1\ t_2\ |\ [C_i,C_o]\rightarrow t_2\ |\ [(\lambda v_2.v_1\ v_2)\leadsto C_i, C_o]\\
+& (\lambda x.t_1)\ v_2\ |\ [C_i,C_o]\rightarrow [x\mapsto v_2]t_1\ |\ [C_i,C_o]\\
+\end{aligned}
+$$
+
+#### value
+
+$$
+\begin{aligned}
+& v\ |\ [F\leadsto C_i,C_o]\rightarrow F(v)\ |\ [C_i,C_o]\\
+& v\ |\ [id, C_i\leadsto C_o]\rightarrow v\ |\ [C_i,C_o]\\
+\end{aligned}
+$$
+
+For every top-level term $t$, there's:
+$$
+\begin{aligned}
+& t\ |\ [id,id]\rightarrow^* t'\ |\ [C_i,C_o]\\
+& \Rightarrow t\rightarrow^* C_o(C_i(t'))
+\end{aligned}
+$$
+PS: $id(x)=x, (A\leadsto B)(x)=B(A(x))$
+
+And for a evaluation snapshot $t\ |\ [C_i,C_o]$, there's:
+$$
+\frac{C_i:T_1\rightarrow T_2\quad C_o:T_2\rightarrow T_3}{t:T_1@[T_2,T_3]}
+$$
 
 ### Typing Rules
 
