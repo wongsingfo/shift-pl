@@ -1,48 +1,10 @@
-# 冲冲冲？
-
-`make interface`可以将`parser.mly lexer.mll *.mli`编译为`*.cmi *.cmti`，方便merlin的分析
-
-## Syntax
-
-```ocaml
-type annot =
-  | AnPure
-  | AnImpure
-  | AnId of string
-
-type ty =
-  | TyBool
-  | TyNat
-  (* TyFun(T1, T2, T3, T4, a) = T1 -> T2 @cps[T3, T4, a] *)
-  | TyFun of ty * ty * ty * ty * annot
-  | TyId of string
-
-type term = info * annot * term'
-
-and term' =
-  | TmVar of string
-  | TmFix of annot * string * string * ty option * term
-  | TmAbs of annot * string * ty option * term
-  | TmApp of annot * term * term
-  | TmLet of string * term * term
-  | TmShift of annot * string * term
-  | TmReset of term
-  | TmIf of term * term * term
-  | TmSucc of term
-  | TmPred of term
-  | TmIsZero of term
-  | TmNat of int
-  | TmBool of bool
-```
-
-# CPS is all you need
+# Typed Delimited Continuation
 
 [toc]
 
-
-语言的设计目标，设计思想，形式定义，性质证明，代码使用方法
-
 ## Synopsis
+
+More examples can be found in `/examples` directory. 
 
 ```
 let (+) = fix add. a b. 
@@ -77,14 +39,40 @@ Suppose the input file is `test.f`. Run the following command to build and run t
 ./run.sh test.f
 ```
 
+The `make interface` target is for build `*.cmi` and `*.cmti` files. These files facilitate code completion and type inferernce in [Merlin](https://github.com/ocaml/merlin).
+
 ## Motivation
 
-Constraint-based Typing Rules with Answer Type and Purity Annotation
+Delimited continuations were first introduced by Felleisen in 1988. It is a powerful tool for abstracting control. They can be used for implementing
+
+- Generator function
+- Nondeterministic programming 
+- Exception handling
+- Automatic differentiation (AD)  [8]
+
+However, many languages don't support the continuation manipulation, though they may provide a much weaker form like exception handing, generator function. Examples are Java, Ruby, Python. Althought indeed there exist some languages that support it, either they are not typed (Scheme, Racket) or they impose strong restriction on the way using it (Standard ML, Delimcc Library of OCaml). The most common restriction is the answer type modification. 
+
+Without a type system, the programs written with conitnuation operators are error-prone and hard-to-debug. Unfortunately, It is not easy to implement delimited continuation operators in standard FP languages, especially in a typed setting. The reason is that the answer type modification feature and the context capturing are highly coupled with type system and the evalutor logic. It becomes less and less realistic to rewrite the core parts of a full-fledged typed language.
+
+To overcome these problems, we design and implement a typed delimited continuation language. Specifically, our design targets and the main achievements are: 
+
+- We design a language that support delimited continuation operators (`reset` and `shift`). We formalized its syntax, evaluation rules, as well as typing rules.
+- To ensure the language safety (or soundness), we implemented the type checker. A program that passes the check has the property of progress and preservation.
+- We dispense with the need for modification with interpreters / evaluators. Instead, by first using CPS transformation to eliminate explicit continuation operators, we can execute the program in the standard language.
+
+## System Design 
+
+<img src="assets/EMAINeA0CNOFOqEu.png__thumbnail" alt="img" style="width:480px;" />
+
+A common process is shown in Figure A. 
+
+We take a different appraoch as illustated by Figure B.
 
 ## Formalization 
 
 ### Syntax
 
+Constraint-based Typing Rules with Answer Type and Purity Annotation
 $$
 \begin{aligned}
 a:= & & purity\ annotations:\\
@@ -444,16 +432,44 @@ $$
 \end{aligned}
 $$
 
+## CPS Transformation
 
-## Property 
+    cps[ something ]
+    => lambda k_outer. 
+          do_something (lambda result. k_outer result)
+    
+    cps[ succ v ]
+    => lambda k_outer. 
+    		cps[v] (lambda v. k_outer (succ v))
+    
+    id = lambda v. v
+    
+    cps[ reset e ]
+    => cps[e] id
+            
+    cps[ shift k in e ]
+    => lambda k_outer. 
+    		let k = lambda v. lambda k'. k' (k_outer v) in 
+    			cps[e] id
+## Properties and Proof
 
 
 
-abort e := shift (fun () -> e)
-call/cc f := shift (fun k -> k (f (fun x -> abort (k x))))
-try e with h := call/cc (fun cc -> let raise x = cc (h x) in e)
+## References
 
+[1] Asai and Uehara, Selective CPS Transformation for Shift and Reset [PEPM ’18]
 
+[2] Asai and Kameyama, Polymorphic Delimited Continuations [APLAS '07]
 
+[3] Asai and Kiselyov, Introduction to Programming with Shift and Reset [Tutorial]
 
+[4] Representing Control: A Study of the CPS transformation
+
+[5] Asai, On Typing Delimited Continuations: Three New Solutions to the Printf Problem ['07]
+
+[6] A Functional Abstraction of Typed Context
+
+[7] Capturing the Future by Replaying the Past (Functional Pearl) 
+
+[8] Demystifying Differentiable Programming: Shift/Reset the Penultimate Backpropagator
 
