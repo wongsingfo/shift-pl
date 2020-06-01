@@ -174,6 +174,8 @@ then there must be $T_4=T_4'$, but $T_1=T_1',T_2=T_2',T_3=T_3'$ are not guarante
 
 So the typing information of $t$ must contain $T_1$, $T_2$, $T_3$; we call them "**type of $t$**", "**answer type before $t$'s evaluation**", "**answer type after $t$'s evaluation**" respectively. 
 
+PS: $C: T_1\rightarrow T_2$ means $\exist\ t:T_1,\exist v,(t\ |\ [C,\emptyset]\rightarrow^* v\ |\ [\emptyset, \emptyset])\wedge v:T_2$. So do $K:T_3\rightarrow T_4$ 
+
 
 
 ### Typing Rules (without annotation)
@@ -195,6 +197,8 @@ $$
 	\Gamma\vdash x:I@[X,X];\emptyset
 }
 $$
+
+PS: $\text{inst}(T)$ means instantiate $T$'s binding variable (for example, $\alpha$ in type scheme $\forall \alpha. \alpha\rightarrow \alpha$)
 
 #### Abstraction
 
@@ -246,8 +250,6 @@ $$
 }
 \end{aligned}
 $$
-
-PS: $\text{inst}(T)$ means instantiate $T$'s binding variable (for example, $\alpha$ in type scheme $\forall \alpha. \alpha\rightarrow \alpha$)
 
 ### Typing Rules (with annotation)
 
