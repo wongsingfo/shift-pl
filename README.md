@@ -64,11 +64,15 @@ To overcome these problems, we design and implement a typed delimited continuati
 
 <img src="assets/EMAINeA0CNOFOqEu.png__thumbnail" alt="img" style="width:480px;" />
 
-A common process is shown in Figure A. 
+Figure A shows a common process for type checking and evaluting a program. This method suffers from the complexity of building a evalutor that supports `reset / shift` operators, as discussed in the previous section, Ther major dificulty is that we need to manage the evaluation context explicitly. 
 
-We take a different appraoch as illustated by Figure B.
+To avoid modifying the standard evaluator, we take a different appraoch as illustated by Figure B. After type checking the program, we can first erase the type infomation (because of the erasure property) and then transform the original program into a new one that does not contain `reset / shift` operators. Note that the transformation does not change the behavior of the program. In other words, the new and the old program must produce the same running output.
 
 ## Formalization 
+
+In this section, we are going to formalize the types and terms in the language. 
+
+We introduce the concept of "annotation". It annotes whether `shift` operator is used during evaluation of the term. If `shift` is usrd, we say the term is **impure**; otherwise, we treat it as a **pure** one. We will soon see in the next section that the distinguishment between pure and impure terms help the CPS transformer eliminate unnecessary transformation and produce better result.
 
 ### Syntax
 
@@ -150,21 +154,13 @@ $$
 \end{aligned}
 $$
 
-PS: $\emptyset(x)=x,\ (A\leadsto B)(x)=B(A(x))$
+where $\emptyset(x)=x,\ (A\leadsto B)(x)=B(A(x))$.
 
-
-
-Suppose $t\ |\ [C,K]$ will be finally evaluated to $v\ |\ [\emptyset, \emptyset]$. 
-
-If $t\ |\ [C, K]\rightarrow t'\ |\ [C',K']\quad C:T_1\rightarrow T_2\quad K: T_3\rightarrow T_4\quad C' :T_1'\rightarrow T_2'\quad K': T_3'\rightarrow T_4'$, 
-
-then there must be $T_4=T_4'$, but $T_1=T_1',T_2=T_2',T_3=T_3'$ are not guaranteed. 
+Suppose $t\ |\ [C,K]$ will be finally evaluated to $v\ |\ [\emptyset, \emptyset]$. If $t\ |\ [C, K]\rightarrow t'\ |\ [C',K']\quad C:T_1\rightarrow T_2\quad K: T_3\rightarrow T_4\quad C' :T_1'\rightarrow T_2'\quad K': T_3'\rightarrow T_4'$, then there must be $T_4=T_4'$, but $T_1=T_1',T_2=T_2',T_3=T_3'$ are not guaranteed. 
 
 So the typing information of $t$ must contain $T_1$, $T_2$, $T_3$; we call them "**type of $t$**", "**answer type before $t$'s evaluation**", "**answer type after $t$'s evaluation**" respectively. 
 
-
-
-### Typing Rules (without annotation)
+### Typing Rules (without Annotation)
 
 type assumption $\Gamma\vdash t:T@[R,S];TC$:
 
@@ -235,9 +231,9 @@ $$
 \end{aligned}
 $$
 
-PS: $\text{inst}(T)$ means instantiate $T$'s binding variable (for example, $\alpha$ in type scheme $\forall \alpha. \alpha\rightarrow \alpha$)
+Let $\text{inst}(T)$ denote instantiated $T$'s binding variable (for example, the $\alpha$ in type scheme $\forall \alpha. \alpha\rightarrow \alpha$)
 
-### Typing Rules (with annotation)
+### Typing Rules (with Annotation)
 
 type assumption $\Gamma\vdash t:T@[R,S,a];[TC,AC]$：
 
@@ -451,7 +447,13 @@ $$
     			cps[e] id
 ## Properties and Proof
 
+In this section, we are going to prove the soundness of our proposed language. 
 
+### Progess
+
+### Presevation 
+
+### Type Erasure
 
 ## References
 
