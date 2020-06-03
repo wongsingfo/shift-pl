@@ -7,6 +7,31 @@
 More examples can be found in `/examples` directory. 
 
 ```
+/* Output: 3 */ 
+succ succ succ 0;
+
+
+/* skip over the first two `succ` */
+/* Output: 1 */
+succ succ (shift k in succ 0); 
+
+
+/* skip over the second `succ` */
+/* Output: 2 */
+succ (reset succ (shift k in succ 0)); 
+
+
+/* resume the captured continuation */
+/* Output: 3 */
+succ (shift k in k (k (k 0)));
+
+
+/* type modification: from Nat to Bool */
+/* Output 1 */
+if (reset succ (shift k in true)) then 1 else 2;
+
+
+/* Nondeterministic programming */ 
 let (+) = fix add. a b. 
   if iszero a 
   then b
@@ -64,13 +89,17 @@ To overcome these problems, we design and implement a typed delimited continuati
 
 <img src="assets/EMAINeA0CNOFOqEu.png__thumbnail" alt="img" style="width:480px;" />
 
-A common process is shown in Figure A. 
+Figure A shows a common process for type checking and evaluting a program. This method suffers from the complexity of building a evalutor that supports `reset / shift` operators, as discussed in the previous section, Ther major dificulty is that we need to manage the evaluation context explicitly. 
 
-We take a different appraoch as illustated by Figure B.
+To avoid modifying the standard evaluator, we take a different appraoch as illustated by Figure B. After type checking the program, we can first erase the type infomation (because of the erasure property) and then transform the original program into a new one that does not contain `reset / shift` operators. Note that the transformation does not change the behavior of the program. In other words, the new and the old program must produce the same running output.
 
 ## Formalization 
 
-### Syntax
+In this section, we are going to formalize the types and terms in the language. 
+
+We introduce the concept of "annotation". It annotes whether `shift` operator is used during evaluation of the term. If `shift` is usrd, we say the term is **impure**; otherwise, we treat it as a **pure** one. We will soon see in the next section that the distinguishment between pure and impure terms help the CPS transformer eliminate unnecessary transformation and produce better result.
+
+### Syntax (with annotation)
 
 Constraint-based Typing Rules with Answer Type and Purity Annotation
 $$
@@ -111,7 +140,7 @@ T:= & & types:\\
 \end{aligned}
 $$
 
-### Evalution Rules
+### Part of Evalution Rules (without annotations)
 
 Abstract machine state: $t\ |\ [C,K]$
 
@@ -150,15 +179,9 @@ $$
 \end{aligned}
 $$
 
-PS: $\emptyset(x)=x,\ (A\leadsto B)(x)=B(A(x))$
+where $\emptyset(x)=x,\ (A\leadsto B)(x)=B(A(x))$.
 
-
-
-Suppose $t\ |\ [C,K]$ will be finally evaluated to $v\ |\ [\emptyset, \emptyset]$. 
-
-If $t\ |\ [C, K]\rightarrow t'\ |\ [C',K']\quad C:T_1\rightarrow T_2\quad K: T_3\rightarrow T_4\quad C' :T_1'\rightarrow T_2'\quad K': T_3'\rightarrow T_4'$, 
-
-then there must be $T_4=T_4'$, but $T_1=T_1',T_2=T_2',T_3=T_3'$ are not guaranteed. 
+Suppose $t\ |\ [C,K]$ will be finally evaluated to $v\ |\ [\emptyset, \emptyset]$. If $t\ |\ [C, K]\rightarrow t'\ |\ [C',K']\quad C:T_1\rightarrow T_2\quad K: T_3\rightarrow T_4\quad C' :T_1'\rightarrow T_2'\quad K': T_3'\rightarrow T_4'$, then there must be $T_4=T_4'$, but $T_1=T_1',T_2=T_2',T_3=T_3'$ are not guaranteed. 
 
 So the typing information of $t$ must contain $T_1$, $T_2$, $T_3$; we call them "**type of $t$**", "**answer type before $t$'s evaluation**", "**answer type after $t$'s evaluation**" respectively. 
 
@@ -166,7 +189,7 @@ PS: $C: T_1\rightarrow T_2$ means $\exist\ t:T_1,\exist v,(t\ |\ [C,\emptyset]\r
 
 
 
-### Typing Rules (without annotation)
+### Part of Typing Rules (without annotation)
 
 type assumption $\Gamma\vdash t:T@[R,S];TC$:
 
@@ -453,7 +476,13 @@ $$
     			cps[e] id
 ## Properties and Proof
 
+In this section, we are going to prove the soundness of our proposed language. 
 
+### Progess
+
+### Presevation 
+
+### Type Erasure
 
 ## References
 
