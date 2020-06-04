@@ -19,7 +19,16 @@ succ succ (shift k in succ 0);
 /* skip over the second `succ` */
 /* Output: 2 */
 succ (reset succ (shift k in succ 0)); 
-
+/*
+succ_1 ...   | [ null, null  ]
+reset ...    | [ succ_1, null ]
+succ_2 ...   | [ null, succ_1 ]
+shift  ...   | [ succ_2, succ_1 ]
+succ_3 ...   | [ null, succ_1]
+1            | [ null, succ_1]
+succ_1 1     | [ null, null ]
+2
+*/
 
 /* resume the captured continuation */
 /* Output: 3 */
@@ -29,7 +38,15 @@ succ (shift k in k (k (k 0)));
 /* type modification: from Nat to Bool */
 /* Output 1 */
 if (reset succ (shift k in true)) then 1 else 2;
-
+/*
+if ...                 | [ null,  null ]
+reset (...)            | [ if..., null ]
+succ (shift k in true) | [ null, if... ]
+shift k in true        | [ succ, if... ]
+true                   | [ null, if... ]
+if true ...            | [ null, null  ]
+1                      | [ null, null  ]
+*/
 
 /* Nondeterministic programming */ 
 let (+) = fix add. a b. 
@@ -74,6 +91,7 @@ Delimited continuations were first introduced by Felleisen in 1988. It is a powe
 - Nondeterministic programming 
 - Exception handling
 - Automatic differentiation (AD)  [8]
+- Typed Printf [5]
 
 However, many languages don't support the continuation manipulation, though they may provide a much weaker form like exception handing, generator function. Examples are Java, Ruby, Python. Althought indeed there exist some languages that support it, either they are not typed (Scheme, Racket) or they impose strong restriction on the way using it (Standard ML, Delimcc Library of OCaml). The most common restriction is the answer type modification. 
 
@@ -189,9 +207,7 @@ then there must be $T_4=T_4'$, but $T_1=T_1',T_2=T_2',T_3=T_3'$ are not guarante
 
 So the typing information of $t$ must contain $T_1$, $T_2$, $T_3$; we call them "**type of $t$**", "**answer type before $t$'s evaluation**", "**answer type after $t$'s evaluation**" respectively. 
 
-PS: $C: T_1\rightarrow T_2$ and $K:T_3\rightarrow T_4$ are not formal representations, just for the introduction to "answer type".
-
-
+Note that $C: T_1\rightarrow T_2$ and $K:T_3\rightarrow T_4$ are not formal representations, just for the introduction to "answer type".
 
 ### Part of Typing Rules (without annotation)
 
@@ -213,7 +229,7 @@ $$
 }
 $$
 
-PS: $\text{inst}(T)$ means instantiate $T$'s binding variable (for example, $\alpha$ in type scheme $\forall \alpha. \alpha\rightarrow \alpha$)
+Let $\text{inst}(T)$ denote $T$'s instantiated binding variable (for example, $\alpha$ in type scheme $\forall \alpha. \alpha\rightarrow \alpha$)
 
 #### Abstraction
 
@@ -461,6 +477,8 @@ $$
 
 ## CPS Transformation
 
+[4] discuss the approach for CPS transform. The paper prove that "transforming \\lamda-term into CPS can be expressed in one pass by moving administrative redexes to translation time in a context-free way. The translation is easily extended to the usual constructs of applicative oder functional languages and also to account for control operators". We followed its idea to transform the `reset / shift` operators into CPS style. The sketch below presents the core part of our transformatino rules: 
+
     cps[ something ]
     => lambda k_outer. 
           do_something (lambda result. k_outer result)
@@ -505,11 +523,11 @@ In this section, we are going to prove the soundness of our proposed language.
 
 [3] Asai and Kiselyov. Introduction to Programming with Shift and Reset [Tutorial]
 
-[4] Danvy and Filinski. Representing Control: A Study of the CPS transformation [1991]
+[4] Danvy and Filinski. Representing Control: A Study of the CPS transformation ['91]
 
 [5] Asai. On Typing Delimited Continuations: Three New Solutions to the Printf Problem ['07]
 
-[6] Danvy and Filinski. A Functional Abstraction of Typed Context [1989]
+[6] Danvy and Filinski. A Functional Abstraction of Typed Context ['89]
 
 [7] Koppel. Capturing the Future by Replaying the Past. Proc. ACM Program. Lang., Vol. 2, No. ICFP, Article 76 ['18]
 
