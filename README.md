@@ -488,21 +488,30 @@ In this section, we are going to prove the soundness of our proposed language.
 
 ### Type Erasure
 
+## Division of Work
+
++ Renze Chen: Frontend
+  + Syntax/Parsing
+  + Type Inference
++ Chengke Wang: Backend
+  + CPS Transformation
+  + Evaluation
+
 ## References
 
-[1] Asai and Uehara, Selective CPS Transformation for Shift and Reset [PEPM ’18]
+[1] Asai and Uehara. Selective CPS Transformation for Shift and Reset [PEPM '18]
 
-[2] Asai and Kameyama, Polymorphic Delimited Continuations [APLAS '07]
+[2] Asai and Kameyama. Polymorphic Delimited Continuations [APLAS '07]
 
-[3] Asai and Kiselyov, Introduction to Programming with Shift and Reset [Tutorial]
+[3] Asai and Kiselyov. Introduction to Programming with Shift and Reset [Tutorial]
 
-[4] Representing Control: A Study of the CPS transformation
+[4] Danvy and Filinski. Representing Control: A Study of the CPS transformation [1991]
 
-[5] Asai, On Typing Delimited Continuations: Three New Solutions to the Printf Problem ['07]
+[5] Asai. On Typing Delimited Continuations: Three New Solutions to the Printf Problem ['07]
 
-[6] A Functional Abstraction of Typed Context
+[6] Danvy and Filinski. A Functional Abstraction of Typed Context [1989]
 
-[7] Capturing the Future by Replaying the Past (Functional Pearl) 
+[7] Koppel. Capturing the Future by Replaying the Past. Proc. ACM Program. Lang., Vol. 2, No. ICFP, Article 76 ['18]
 
-[8] Demystifying Differentiable Programming: Shift/Reset the Penultimate Backpropagator
+[8] Fei Wang and Xilun Wu. Demystifying Differentiable Programming: Shift/Reset the Penultimate Backpropagator ['19]
 
