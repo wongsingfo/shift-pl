@@ -2,6 +2,17 @@
 
 [toc]
 
+## Work Division
+
+We have spent nearly three months to complete and polish this project. We rewritten most of the codes provided by [TAPL](https://www.cis.upenn.edu/~bcpierce/tapl/) [10], including 2500+ line additions and 1200+ line deletions. During the process of development, we referred to several interesting papers and learnt a lot from them.
+
++ Renze Chen: Frontend
+  + Syntax/Parsing
+  + Type Inference
++ Chengke Wang: Backend
+  + CPS Transformation
+  + Evaluation
+
 ## Synopsis
 
 More examples can be found in `/examples` directory. 
@@ -506,15 +517,6 @@ In this section, we are going to prove the soundness of our proposed language.
 
 ### Type Erasure
 
-## Division of Work
-
-+ Renze Chen: Frontend
-  + Syntax/Parsing
-  + Type Inference
-+ Chengke Wang: Backend
-  + CPS Transformation
-  + Evaluation
-
 ## References
 
 [1] Asai and Uehara. Selective CPS Transformation for Shift and Reset [PEPM '18]
@@ -532,4 +534,6 @@ In this section, we are going to prove the soundness of our proposed language.
 [7] Koppel. Capturing the Future by Replaying the Past. Proc. ACM Program. Lang., Vol. 2, No. ICFP, Article 76 ['18]
 
 [8] Fei Wang and Xilun Wu. Demystifying Differentiable Programming: Shift/Reset the Penultimate Backpropagator ['19]
+
+[10] Benjamin. Types and Programming Languages. The MIT Press
 
