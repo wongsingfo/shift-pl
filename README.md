@@ -13,6 +13,8 @@ We have spent nearly three months to complete and polish this project. We rewrit
   + CPS Transformation
   + Evaluation
 
+
+
 ## Synopsis
 
 More examples can be found in `/examples` directory. 
@@ -84,6 +86,8 @@ in reset
     [[a + b * a, a * b + a]];
 ```
 
+
+
 ## Build and Run
 
 Suppose the input file is `test.f`. Run the following command to build and run the interpreter.
@@ -92,7 +96,9 @@ Suppose the input file is `test.f`. Run the following command to build and run t
 ./run.sh test.f
 ```
 
-The `make interface` target is for build `*.cmi` and `*.cmti` files. These files facilitate code completion and type inferernce in [Merlin](https://github.com/ocaml/merlin).
+The `make interface` target is for build `*.cmi` and `*.cmti` files. These files facilitate code completion and type inference in [Merlin](https://github.com/ocaml/merlin).
+
+
 
 ## Motivation
 
@@ -104,9 +110,9 @@ Delimited continuations were first introduced by Felleisen in 1988. It is a powe
 - Automatic differentiation (AD)  [8]
 - Typed Printf [5]
 
-However, many languages don't support the continuation manipulation, though they may provide a much weaker form like exception handing, generator function. Examples are Java, Ruby, Python. Althought indeed there exist some languages that support it, either they are not typed (Scheme, Racket) or they impose strong restriction on the way using it (Standard ML, Delimcc Library of OCaml). The most common restriction is the answer type modification. 
+However, many languages don't support the continuation manipulation, though they may provide a much weaker form like exception handing, generator function. Examples are Java, Ruby, Python. Although indeed there exist some languages that support it, either they are not typed (Scheme, Racket) or they impose strong restriction on the way using it (Standard ML, Delimcc Library of OCaml). The most common restriction is the answer type modification. 
 
-Without a type system, the programs written with conitnuation operators are error-prone and hard-to-debug. Unfortunately, It is not easy to implement delimited continuation operators in standard FP languages, especially in a typed setting. The reason is that the answer type modification feature and the context capturing are highly coupled with type system and the evalutor logic. It becomes less and less realistic to rewrite the core parts of a full-fledged typed language.
+Without a type system, the programs written with continuation operators are error-prone and hard-to-debug. Unfortunately, It is not easy to implement delimited continuation operators in standard FP languages, especially in a typed setting. The reason is that the answer type modification feature and the context capturing are highly coupled with type system and the evaluator logic. It becomes less and less realistic to rewrite the core parts of a full-fledged typed language.
 
 To overcome these problems, we design and implement a typed delimited continuation language. Specifically, our design targets and the main achievements are: 
 
@@ -114,21 +120,25 @@ To overcome these problems, we design and implement a typed delimited continuati
 - To ensure the language safety (or soundness), we implemented the type checker. A program that passes the check has the property of progress and preservation.
 - We dispense with the need for modification with interpreters / evaluators. Instead, by first using CPS transformation to eliminate explicit continuation operators, we can execute the program in the standard language.
 
+
+
 ## System Design 
 
 <img src="assets/EMAINeA0CNOFOqEu.png__thumbnail" alt="img" style="width:480px;" />
 
-Figure A shows a common process for type checking and evaluting a program. This method suffers from the complexity of building a evalutor that supports `reset / shift` operators, as discussed in the previous section, Ther major dificulty is that we need to manage the evaluation context explicitly. 
+Figure A shows a common process for type checking and evaluating a program. This method suffers from the complexity of building a evaluator that supports `reset / shift` operators, as discussed in the previous section, Their major difficulty is that we need to manage the evaluation context explicitly. 
 
-To avoid modifying the standard evaluator, we take a different appraoch as illustated by Figure B. After type checking the program, we can first erase the type infomation (because of the erasure property) and then transform the original program into a new one that does not contain `reset / shift` operators. Note that the transformation does not change the behavior of the program. In other words, the new and the old program must produce the same running output.
+To avoid modifying the standard evaluator, we take a different approach as illustrated by Figure B. After type checking the program, we can first erase the type information (because of the erasure property) and then transform the original program into a new one that does not contain `reset / shift` operators. Note that the transformation does not change the behavior of the program. In other words, the new and the old program must produce the same running output.
+
+
 
 ## Formalization 
 
 In this section, we are going to formalize the types and terms in the language. 
 
-We introduce the concept of "annotation". It annotes whether `shift` operator is used during evaluation of the term. If `shift` is usrd, we say the term is **impure**; otherwise, we treat it as a **pure** one. We will soon see in the next section that the distinguishment between pure and impure terms help the CPS transformer eliminate unnecessary transformation and produce better result.
+We introduce the concept of "annotation". It annotates whether `shift` operator is used during evaluation of the term. If `shift` is used, we say the term is **impure**; otherwise, we treat it as a **pure** one. We will soon see in the next section that the distinguishment between pure and impure terms help the CPS transformer eliminate unnecessary transformation and produce better result.
 
-### Syntax (with annotation)
+### Syntax
 
 Constraint-based Typing Rules with Answer Type and Purity Annotation
 $$
@@ -169,7 +179,9 @@ T:= & & types:\\
 \end{aligned}
 $$
 
-### Part of Evalution Rules
+
+
+### Part of Algorithmic Evaluation Rules
 
 Abstract machine state: $t\ |\ [C,K]$
 
@@ -210,6 +222,8 @@ $$
 
 where $\emptyset(x)=x,\ (A\leadsto B)(x)=B(A(x))$.
 
+
+
 Suppose $t\ |\ [C,K]$ will be finally evaluated to $v\ |\ [\emptyset, \emptyset]$. 
 
 If $t\ |\ [C, K]\rightarrow t'\ |\ [C',K']\quad C:T_1\rightarrow T_2\quad K: T_3\rightarrow T_4\quad C' :T_1'\rightarrow T_2'\quad K': T_3'\rightarrow T_4'$, 
@@ -220,82 +234,61 @@ So the typing information of $t$ must contain $T_1$, $T_2$, $T_3$; we call them 
 
 Note that $C: T_1\rightarrow T_2$ and $K:T_3\rightarrow T_4$ are not formal representations, just for the introduction to "answer type".
 
-### Part of Typing Rules (without annotation)
 
-type assumption $\Gamma\vdash t:T@[R,S];TC$:
 
-+ $\Gamma$: Type context
-+ $T$: Type of $t$
-+ $R$: Answer type before $t$'s evaluation
-+ $S$: Answer type after $t$'s evaluation
-+ $TC$: <u>T</u>ype-<u>C</u>ontraints
+### Part of Syntactic Evaluation Rules
 
-#### Variable
+The algorithmic evaluation rules above clearly shows the context/stack changing during evaluation, and can be easily used to implement a evaluation algorithm. However, since not every algorithmic evaluation rule stands for a reduction (some of them stand for stack-pushing or stack-popping), it's annoying to use them to formalize the properties like progress and preservation. Therefore, we introduce a set of syntactic evaluation rules here.
 
-$$
-\frac{
-	x:T\in \Gamma\quad I=\text{inst}(T)\quad X=\text{fresh}()
-}{
-	\Gamma\vdash x:I@[X,X];\emptyset
-}
-$$
-
-Let $\text{inst}(T)$ denote $T$'s instantiated binding variable (for example, $\alpha$ in type scheme $\forall \alpha. \alpha\rightarrow \alpha$)
-
-#### Abstraction
-
+Firstly we define the syntactic form of context: 
 $$
 \begin{aligned}
-\frac{
-	X,Y=\text{fresh}()\quad\Gamma,x:X\vdash t_1:T_1@[R_1,S_1];TC
-}{
-	\Gamma\vdash (\lambda x.t_1):(X\rightarrow T_1@[R_1,S_1])@[Y,Y];TC
-}
+C:= & & context\\
+& []\\
+& C\ t\\
+& v\ C\\
+& reset\ C\\
+\ \\
+P:= & & pure\ context\\
+& []\\
+& P\ t\\
+& v\ P
 \end{aligned}
 $$
 
 #### Application
 
 $$
-\frac{
-	\Gamma\vdash t_1:T_1@[R_1,S_1];TC_1\quad \Gamma\vdash t_2:T_2@[R_2,S_2];TC_2\\
-	X,Y=\text{fresh}()\\
-	TC=TC_1\cup TC_2\cup\{T_1=T_2\rightarrow X@[Y,R_2],\ R_1=S_2\}
-}{
-	\Gamma\vdash (t_1\ t_2):X@[Y,S_1];TC
-}
-$$
-
-#### Shift
-
-$$
-\begin{aligned}
-\frac{
-    X,Y=\text{fresh}()\\
-    \Gamma,k:\forall \tau.(X\rightarrow Y@[\tau,\tau])\vdash t_1:T_1@[R_1,S_1];TC\\
-    TC'=TC\cup\{T_1=R_1\}
-}{
-    \Gamma\vdash (\text{shift}\ k\ \text{in}\ t_1):X@[Y,S_1];TC'
-}
-\end{aligned}
+\frac{t_1\rightarrow t_1'}{t_1\ t_2\rightarrow t_1'\ t_2}\\
+\frac{t_2\rightarrow t_2'}{v_1\ t_2\rightarrow v_1\ t_2'}\\
+(\lambda x.t_1)\ v_2\rightarrow [x\mapsto v_2]t_1
 $$
 
 #### Reset
 
 $$
-\begin{aligned}
-\frac{
-	X=\text{fresh}()\quad \Gamma\vdash t_1:T_1@[R_1,S_1];TC\\
-	TC'=TC\cup\{T_1=R_1\}
-}{
-    \Gamma\vdash (\text{reset}\ t_1):S_1@[X,X];TC'
-}
-\end{aligned}
+\frac{t_1\rightarrow t_1'}{\text{reset}\ t_1\rightarrow \text{reset}\ t_1'}\\
+\text{reset}\ v\rightarrow v
 $$
 
-### Typing Rules (with annotation)
+#### Reset-Shift
 
-type assumption $\Gamma\vdash t:T@[R,S,a];[TC,AC]$：
+$$
+\text{reset}\ P[\text{shift}\ x\ \text{in}\ t_1]\rightarrow \text{reset}\ [x\mapsto \lambda v.\text{reset}\ P[v]]t_1
+$$
+
+
+
+It's easy to show that:
+
++ If $t\rightarrow^* t'$ under declarative evaluation rules, then there's some $t''$ with $t\ |\ [\emptyset,\emptyset ]\rightarrow^* t''\ |\ [C,K]$ and $ (C\leadsto K)(t'')=t'$ under algorithmic evaluation rules.
++ If $t\ |\ [C,K]\rightarrow^* t'\ |\ [C',K']$ under algorithmic evaluation rules, then $(C\leadsto K)(t)\rightarrow^* (C'\leadsto K')(t')$ under declarative evaluation rules.
+
+
+
+### Typing Rules
+
+type assumption $\Gamma\vdash t^a:T@[R,S,a];[TC,AC]$：
 
 + $\Gamma$: type context
 + $t$: term
@@ -352,7 +345,7 @@ $$
 }
 $$
 
-#### Fixpoint
+#### Fix-point
 
 $$
 \begin{aligned}
@@ -382,6 +375,8 @@ $$
 }
 \end{aligned}
 $$
+
+PS: $gen(\Gamma,T)$ means a type scheme generalizing type $T$ (in type context $\Gamma$)
 
 #### Let
 
@@ -486,9 +481,11 @@ $$
 \end{aligned}
 $$
 
+
+
 ## CPS Transformation
 
-[4] discuss the approach for CPS transform. The paper prove that "transforming \\lamda-term into CPS can be expressed in one pass by moving administrative redexes to translation time in a context-free way. The translation is easily extended to the usual constructs of applicative oder functional languages and also to account for control operators". We followed its idea to transform the `reset / shift` operators into CPS style. The sketch below presents the core part of our transformatino rules: 
+[4] discuss the approach for CPS transform. The paper prove that "transforming \\lambda-term into CPS can be expressed in one pass by moving administrative redexes to translation time in a context-free way. The translation is easily extended to the usual constructs of applicative oder functional languages and also to account for control operators". We followed its idea to transform the `reset / shift` operators into CPS style. The sketch below presents the core part of our transformation rules: 
 
     cps[ something ]
     => lambda k_outer. 
@@ -507,15 +504,187 @@ $$
     => lambda k_outer. 
     		let k = lambda v. lambda k'. k' (k_outer v) in 
     			cps[e] id
+
+
 ## Properties and Proof
 
-In this section, we are going to prove the soundness of our proposed language. 
+In this section, we are going to prove the soundness of our proposed language. For simplicity, we here just use part of syntactic evaluation rules and part of weaken typing rules (without purity annotations and polymorphism). The full proofs is easy to get by extending our ones.
 
-### Progess
+### Part of Weaken Typing Rules
 
-### Presevation 
+type assumption $\Gamma\vdash t:T@[R,S];TC$:
 
-### Type Erasure
++ $\Gamma$: Type context
++ $T$: Type of $t$
++ $R$: Answer type before $t$'s evaluation
++ $S$: Answer type after $t$'s evaluation
++ $TC$: <u>T</u>ype-<u>C</u>onstraints
+
+#### Variable
+
+$$
+\frac{	x:T\in \Gamma\quad X=\text{fresh}()}{	\Gamma\vdash x:T@[X,X];\emptyset}
+$$
+
+#### Abstraction
+
+$$
+\begin{aligned}
+\frac{
+	X,Y=\text{fresh}()\quad\Gamma,x:X\vdash t_1:T_1@[R_1,S_1];TC
+}{
+	\Gamma\vdash (\lambda x.t_1):(X\rightarrow T_1@[R_1,S_1])@[Y,Y];TC
+}
+\end{aligned}
+$$
+
+#### Application
+
+$$
+\frac{
+	\Gamma\vdash t_1:T_1@[R_1,S_1];TC_1\quad \Gamma\vdash t_2:T_2@[R_2,S_2];TC_2\\
+	X,Y=\text{fresh}()\\
+	TC=TC_1\cup TC_2\cup\{T_1=T_2\rightarrow X@[Y,R_2],\ R_1=S_2\}
+}{
+	\Gamma\vdash (t_1\ t_2):X@[Y,S_1];TC
+}
+$$
+
+#### Shift
+
+$$
+\begin{aligned}\frac{    X,Y,Z=\text{fresh}()\\    \Gamma,k:(X\rightarrow Y@[Z,Z])\vdash t_1:T_1@[R_1,S_1];TC\\    TC'=TC\cup\{T_1=R_1\}}{    \Gamma\vdash (\text{shift}\ k\ \text{in}\ t_1):X@[Y,S_1];TC'}\end{aligned}
+$$
+
+#### Reset
+
+$$
+\begin{aligned}
+\frac{
+	X=\text{fresh}()\quad \Gamma\vdash t_1:T_1@[R_1,S_1];TC\\
+	TC'=TC\cup\{T_1=R_1\}
+}{
+    \Gamma\vdash (\text{reset}\ t_1):S_1@[X,X];TC'
+}
+\end{aligned}
+$$
+
+
+
+PS: We may abbreviate $\Gamma \vdash t:T@[X,X]$ (with some fresh $X$) to $\Gamma \vdash_p t: T$
+
+
+
+### LEMMA-1 [INVERSION OF THE TYPING RELATION]
+
++ If $\Gamma\vdash x:T@[R,S]$, then $R=S$ and $x:T\in\Gamma$
++ If $\Gamma\vdash (\lambda x.t_1):T@[R,S]$, then $R=S$ and there's some $X,T_1,R_1,S_1$ with $\Gamma,x:X\vdash t_1:T_1@[R_1,S_1]$ and $T=X\rightarrow T_1@[R_1,S_1]$
++ If $\Gamma \vdash (t_1\ t_2):T@[R,S]$, then there's some $U,V,T_2$ with $\Gamma \vdash t_1:(T_2\rightarrow T@[R,U])@[V,S]$ and $\Gamma\vdash t_2:T_2@[U,V]$
++ If $\Gamma\vdash (\text{shift}\ k\ \text{in}\ t_1):T@[R,S]$, then there's some $Z,T_1$ with $\Gamma,k:(T\rightarrow R@[Z,Z])\vdash t_1:T_1@[T_1,S]$
++ If $\Gamma\vdash (\text{reset}\ t_1):T@[R,S]$, then $R=S$ and there's some $T_1$ with $\Gamma\vdash t_1:T_1@[T_1,T]$
+
+
+
+### LEMMA-2 [CANONICAL FORMS]
+
++ If $v$ is a value of type $Bool$, then $v$ is either $true$ or $false$.
++ If $v$ is a value of type $X\rightarrow Y@[R,S]$, then there's some $x,t_1$ with $v=\lambda x.t_1$
+
+
+
+### THEOREM [PROGRESS]
+
+If $\Gamma \vdash t:T@[R,S]$, then either $t$ is a value or there's some $t'$ with $t\rightarrow t'$ or there's some $x$, $t_1$ and pure-context $P$ with $t=P[\text{shift}\ x\ \text{in}\ t_1]$
+
+#### Proof
+
+By induction on typing derivation(or $t$'s form):
+
++ $t=t_1\ t_2$: By lemma-1 and the induction hypothesis:
+  + There's $t_1'$ with $t_1\rightarrow t_1'$, thus $t\rightarrow t_1'\ t_2$
+  + There's $P,x,t_1'$ with $t_1=P[\text{shift}\ x\ \text{in}\ t_1']$, thus $t=(P\ t_2)[\text{shift}\ x\ \text{in}\ t_1']$
++ $t=v_1\ t_2$: By lemma-1 and the induction hypothesis:
+  + There's $t_2'$ with $t_2\rightarrow t_2'$, thus $t\rightarrow v_1\ t_2'$
+  + There's $P,x,t_2'$ with $t_2=P[\text{shift}\ x\ \text{in}\ t_2']$, thus $t=(v_1\ P)[\text{shift}\ x\ \text{in}\ t_2']$
++ $t=v_1\ v_2$: By lemma-1, there's $T_2,X_2$ with $\Gamma \vdash_p v_1:T_2\rightarrow T@[R,X_2]$. And by lemma-2, there's $x,t_1$ with $v_1=\lambda x.t_1$, thus $t\rightarrow [x\mapsto v_2]t_1$
++ $t=\text{reset}\ t_1$: By lemma-1 and the induction hypothesis:
+  + There's $t_1'$ with $t_1\rightarrow t_1'$, thus $t\rightarrow \text{reset}\ t_1'$
+  + There's $P,x,t_1'$ with $t_1=P[\text{shift}\ x\ \text{in}\ t_1']$, thus $t\rightarrow \text{reset}\ [x\mapsto \lambda v.\text{reset}\ P[v]]t_1'$
++ $t=\text{reset}\ v_1$: Obviously $t\rightarrow v_1$
++ $t=\text{shift}\ x\ \text{in}\ t_1$: Obviously $t=P[\text{shift}\ x\ \text{in}\ t_1]$, where $P=[]$
+
+
+
+### LEMMA-3 [PRESERVATION UNDER SUBSTITUTION]
+
+If $\Gamma ,x: X\vdash t:T@[R,S]$ and $\Gamma \vdash_p v:X$, then $\Gamma \vdash [x\mapsto v]t:T@[R,S]$
+
+#### Proof
+
+By induction on $t$' form:
+
++ $t=z$: 
+  + If $z=x$, then $X=T,\ R=S,\ [x\mapsto v]t=v$, thus $\Gamma \vdash [x\mapsto v]t:T@[R,S]$. 
+  + If $z\ne x$, then $[x\mapsto v]t=t$, thus $\Gamma\vdash [x\mapsto v]t:T@[R,S]$.
++ $t=\lambda y.t_1$:
+  + If $y=x$, then $[x\mapsto v]t=t$, thus $\Gamma \vdash [x\mapsto v]t:T@[R,S]$
+  + If $y\ne x$, then 
+    + By lemma-1, $R=S$ and there's some $Y,T_1,R_1,S_1$ with 
+      + $T=Y\rightarrow T_1 @[R_1,S_1]$, 
+      + $\Gamma,x:X,y:Y\vdash t_1:T_1@[R_1,S_1]$ (thus $\Gamma,y:Y,x:X\vdash t_1:T_1@[R_1,S_1]$),
+      + $\Gamma,y:Y\vdash_p v:X$. 
+    + By the induction hypothesis, $\Gamma,y:Y\vdash [x\mapsto v]t_1:T_1@[R_1,S_1]$.
+    + By typing rules, $\Gamma \vdash (\lambda y.[x\mapsto v]t_1):T@[R,S]$, thus $\Gamma \vdash [x\mapsto v]t:T@[R,S]$.
++ $t=t_1\ t_2$: Trivially proved by the induction hypothesis, lemma-1 and typing rules. 
++ $t=\text{reset}\ t_1$: Trivially proved by the induction hypothesis, lemma-1 and typing rules.
++ $t=\text{shift}\ y\ \text{in}\ t_1$: Similar to the case $t=\lambda y.t_1$
+
+
+
+### LEMMA-4 [DECOMPOSITION OF PURE-CONTEXT]
+
+If $\Gamma \vdash P[t]:T@[R,S]$, then there's some $\Gamma',X,Y,x$ ($x$ is fresh) with $\Gamma\subseteq \Gamma'$ that
+
++ $\Gamma' \vdash t:X@[Y,S]$
++ $\Gamma,x:X\vdash P[x]:T@[R,Y]$
+
+#### Proof
+
+By induction on $P$'s form:
+
++ $P=[]$: Easily proved by letting $X=T$ and $Y=R$
++ $P=P_1\ t_2$: 
+  + By lemma-1, there's $T_2,U,V$ with $\Gamma \vdash P_1[t]:(T_2\rightarrow T@[R,U])@[V,S]$ and $\Gamma\vdash t_2:T_2@[U,V]$
+  + By the induction hypothesis, there's some $\Gamma',X,Y,x$ with $\Gamma'\vdash t:X@[Y,S]$ and $\Gamma,x:X\vdash P_1[x]:(T_2\rightarrow T@[R,U])@[V,Y]$ (also obviously $\Gamma,x:X \vdash t_2:T_2@[U,V]$)
+  + By typing rules, $\Gamma,x:X\vdash P_1[x]\ t_2:T@[R,Y]$, i.e. $\Gamma,x:X\vdash (P_1\ t_2)[x]:T@[R,Y]$, thus $\Gamma ,x:X\vdash P[x]:T@[R,Y]$ 
++ $P=v_1\ P_2$: Similar to the case $P=P_1\ t_2$
+
+
+
+### THEOREM [PRESERVATION]
+
+If $\Gamma \vdash t:T@[R,S]$ and $t\rightarrow t'$, then $\Gamma\vdash t':T@[R,S]$
+
+#### Proof
+
+By induction on evaluation rule (or $t$'s form):
+
++ $t=t_1\ t_2$ or $t=v_1\ t_2$: Trivially proved by the induction hypothesis, lemma-1 and typing rules.
++ $t=(\lambda x.t_1)\ v_2$: Simply proved by lemma-3, lemma-1 and typing rules.
++ $t=\text{reset}\ t_1$: By lemma-1, $R=S$ and there's some $T_1$ with $\Gamma \vdash t_1:T_1@[T_1,T]$
+  + If $t_1=P[\text{shift}\ k\ \text{in}\ t_1']$:
+    + By lemma-4, there's some $\Gamma',X,Y,x$ ($x$ is fresh) with 
+      + $\Gamma\subseteq \Gamma'$,
+      + $\Gamma'\vdash (\text{shift}\ x\ \text{in}\ t_1'):X@[Y,T]$,
+      + $\Gamma,x:X\vdash P[x]:T_1@[T_1,Y]$ (thus $\Gamma',x:X\vdash P[x]:T_1@[T_1,Y]$)
+    + By lemma-1, there's some $Z,T_1'$ with $\Gamma',k:(X\rightarrow Y@[Z,Z])\vdash t_1':T_1'@[T_1', T]$
+    + By typing rules, $\Gamma'\vdash_p(\lambda x.\text{reset}\ P[x]):(X\rightarrow Y@[Z,Z])$
+    + By lemma-3, $\Gamma'\vdash [k\mapsto (\lambda v. \text{reset}\ P[v])]t_1':T_1'@[T_1',T]$
+    + By typing rules, $\Gamma\vdash (\text{reset}\ [k\mapsto (\lambda v. \text{reset}\ P[v])]t_1'):T@[R,S]$, i.e. $\Gamma\vdash t':T@[R,S]$
+  + Else, trivially proved by the induction hypothesis, lemma-1 and typing rules.
++ $t=\text{reset}\ v_1$: By lemma-1, $R=S$ and $\Gamma\vdash_p v_1:T$, thus $\Gamma \vdash t':T@[R,S]$
+
+
 
 ## References
 

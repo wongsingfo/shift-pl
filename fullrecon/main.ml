@@ -56,11 +56,11 @@ let prbindingty ctx b = match b with
 
 let rec process_command (ctx,nextuvar,constr) cmd = match cmd with
   | Eval(fi,t) -> 
-      let (tyT,nextuvar',constr_t) = recon ctx nextuvar t in
+      (* let (tyT,nextuvar',constr_t) = recon ctx nextuvar t in *)
       let t' = eval ctx t in
-      let constr' = combineconstr constr constr_t in
+      (* let constr' = combineconstr constr constr_t in
       let constr'' =
-        unify fi ctx "Could not simplify constraints" constr' in
+        unify fi ctx "Could not simplify constraints" constr' in *)
 
       printtm ctx t; 
       print_newline ();
@@ -74,7 +74,7 @@ let rec process_command (ctx,nextuvar,constr) cmd = match cmd with
       print_newline ();
 
       pr "-------------------------------------\n";
-      (ctx, nextuvar', constr'')
+      (ctx, nextuvar, constr)
   | Bind(fi,x,bind) -> 
        pr x; pr " "; prbinding ctx bind; print_newline ();
       (addbinding ctx x bind, uvargen, constr)
