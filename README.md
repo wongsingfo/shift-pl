@@ -643,9 +643,9 @@ By induction on $t$' form:
 
 ### LEMMA-4 [DECOMPOSITION OF PURE-CONTEXT]
 
-If $\Gamma \vdash P[t]:T@[R,S]$, then there's some $\Gamma',X,Y,x$ ($x$ is fresh) with $\Gamma\subseteq \Gamma'$ that
+If $\Gamma \vdash P[t]:T@[R,S]$, then there's some $X,Y,x$ ($x$ is fresh) that
 
-+ $\Gamma' \vdash t:X@[Y,S]$
++ $\Gamma \vdash t:X@[Y,S]$
 + $\Gamma,x:X\vdash P[x]:T@[R,Y]$
 
 #### Proof
@@ -655,7 +655,7 @@ By induction on $P$'s form:
 + $P=[]$: Easily proved by letting $X=T$ and $Y=R$
 + $P=P_1\ t_2$: 
   + By lemma-1, there's $T_2,U,V$ with $\Gamma \vdash P_1[t]:(T_2\rightarrow T@[R,U])@[V,S]$ and $\Gamma\vdash t_2:T_2@[U,V]$
-  + By the induction hypothesis, there's some $\Gamma',X,Y,x$ with $\Gamma'\vdash t:X@[Y,S]$ and $\Gamma,x:X\vdash P_1[x]:(T_2\rightarrow T@[R,U])@[V,Y]$ (also obviously $\Gamma,x:X \vdash t_2:T_2@[U,V]$)
+  + By the induction hypothesis, there's some $X,Y,x$ with $\Gamma\vdash t:X@[Y,S]$ and $\Gamma,x:X\vdash P_1[x]:(T_2\rightarrow T@[R,U])@[V,Y]$ (also obviously $\Gamma,x:X \vdash t_2:T_2@[U,V]$)
   + By typing rules, $\Gamma,x:X\vdash P_1[x]\ t_2:T@[R,Y]$, i.e. $\Gamma,x:X\vdash (P_1\ t_2)[x]:T@[R,Y]$, thus $\Gamma ,x:X\vdash P[x]:T@[R,Y]$ 
 + $P=v_1\ P_2$: Similar to the case $P=P_1\ t_2$
 
@@ -673,13 +673,12 @@ By induction on evaluation rule (or $t$'s form):
 + $t=(\lambda x.t_1)\ v_2$: Simply proved by lemma-3, lemma-1 and typing rules.
 + $t=\text{reset}\ t_1$: By lemma-1, $R=S$ and there's some $T_1$ with $\Gamma \vdash t_1:T_1@[T_1,T]$
   + If $t_1=P[\text{shift}\ k\ \text{in}\ t_1']$:
-    + By lemma-4, there's some $\Gamma',X,Y,x$ ($x$ is fresh) with 
-      + $\Gamma\subseteq \Gamma'$,
-      + $\Gamma'\vdash (\text{shift}\ x\ \text{in}\ t_1'):X@[Y,T]$,
-      + $\Gamma,x:X\vdash P[x]:T_1@[T_1,Y]$ (thus $\Gamma',x:X\vdash P[x]:T_1@[T_1,Y]$)
-    + By lemma-1, there's some $Z,T_1'$ with $\Gamma',k:(X\rightarrow Y@[Z,Z])\vdash t_1':T_1'@[T_1', T]$
-    + By typing rules, $\Gamma'\vdash_p(\lambda x.\text{reset}\ P[x]):(X\rightarrow Y@[Z,Z])$
-    + By lemma-3, $\Gamma'\vdash [k\mapsto (\lambda v. \text{reset}\ P[v])]t_1':T_1'@[T_1',T]$
+    + By lemma-4, there's some $X,Y,x$ ($x$ is fresh) with 
+      + $\Gamma\vdash (\text{shift}\ x\ \text{in}\ t_1'):X@[Y,T]$,
+      + $\Gamma,x:X\vdash P[x]:T_1@[T_1,Y]$
+    + By lemma-1, there's some $Z,T_1'$ with $\Gamma,k:(X\rightarrow Y@[Z,Z])\vdash t_1':T_1'@[T_1', T]$
+    + By typing rules, $\Gamma\vdash_p(\lambda x.\text{reset}\ P[x]):(X\rightarrow Y@[Z,Z])$
+    + By lemma-3, $\Gamma\vdash [k\mapsto (\lambda v. \text{reset}\ P[v])]t_1':T_1'@[T_1',T]$
     + By typing rules, $\Gamma\vdash (\text{reset}\ [k\mapsto (\lambda v. \text{reset}\ P[v])]t_1'):T@[R,S]$, i.e. $\Gamma\vdash t':T@[R,S]$
   + Else, trivially proved by the induction hypothesis, lemma-1 and typing rules.
 + $t=\text{reset}\ v_1$: By lemma-1, $R=S$ and $\Gamma\vdash_p v_1:T$, thus $\Gamma \vdash t':T@[R,S]$
