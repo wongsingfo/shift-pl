@@ -4,7 +4,7 @@
 
 ## Work Division
 
-We have spent nearly three months to complete and polish this project. We rewritten most of the codes provided by [TAPL](https://www.cis.upenn.edu/~bcpierce/tapl/) [10], including 2500+ line additions and 1200+ line deletions. During the process of development, we referred to several interesting papers and learnt a lot from them.
+We have spent nearly three months to complete and polish this project. We rewritten most of the codes provided by [TAPL](https://www.cis.upenn.edu/~bcpierce/tapl/) [9], including 2500+ line additions and 1200+ line deletions. During the process of development, we referred to several interesting papers and learnt a lot from them.
 
 + Renze Chen: Frontend
   + Syntax/Parsing
@@ -703,5 +703,5 @@ By induction on evaluation rule (or $t$'s form):
 
 [8] Fei Wang and Xilun Wu. Demystifying Differentiable Programming: Shift/Reset the Penultimate Backpropagator ['19]
 
-[10] Benjamin. Types and Programming Languages. The MIT Press
+[9] Benjamin. Types and Programming Languages. The MIT Press
 
