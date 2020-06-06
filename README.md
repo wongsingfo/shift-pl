@@ -309,6 +309,8 @@ $$
 }
 $$
 
+PS: $inst(T)$ means instantiate type scheme $T$'s bound variable with fresh type variable (for example $inst(\forall \alpha.\alpha\rightarrow\alpha)=X\rightarrow X$, where $X$ is a fresh type variable).
+
 #### Constant
 
 $$
@@ -339,7 +341,7 @@ $$
 	\Gamma\vdash t_1^{a_1}:T_1@[R_1,S_1,a_1];[TC_1,AC_1]，\Gamma\vdash t_2^{a_2}:T_2@[R_2,S_2,a_2];[TC_2,AC_2]\\
 	X,Y,a_3,a=\text{fresh}()\\
 	TC=TC_1\cup TC_2\cup\{T_1=T_2\rightarrow X@[Y,R_2,a_3],\ R_1=S_2\}\\
-	AC=AC_1\cup AC_2\cup\{a_1\le a,\ a_2\le a,\ a_3\le a,\ R_1\ne S_1\Rightarrow a_1=i,\ R_2\ne S_2\Rightarrow a_2=i,\ Y\ne R_2\Rightarrow a_3=i\}
+	AC=AC_1\cup AC_2\cup\{{a_i\le a}^{i=1,2,3},\ \ {R_j\ne S_j\Rightarrow a_j=i}^{j=1,2,3}\}
 }{
 	\Gamma\vdash (t_1^{a_1}@^{a_3}t_2^{a_2})^a:X@[Y,S_1,a];[TC,AC]
 }
@@ -397,7 +399,7 @@ $$
 
 $$
 \frac{
-    \Gamma\vdash t_1^{a_1}:T_1@[R_1,S_1,a_1];[TC_1,AC_1]，\Gamma\vdash t_2^{a_2}:T_2@[R_2,S_2,a_2];[TC_2,AC_2]，\Gamma\vdash t_3^{a_3}:T_3@[R_3,S_3,a_3];[TC_1,AC_1]\\
+    \Gamma\vdash t_1^{a_1}:T_1@[R_1,S_1,a_1];[TC_1,AC_1]\\\Gamma\vdash t_2^{a_2}:T_2@[R_2,S_2,a_2];[TC_2,AC_2]\\\Gamma\vdash t_3^{a_3}:T_3@[R_3,S_3,a_3];[TC_1,AC_1]\\
     a=\text{fresh}()\\
     TC=TC_1\cup TC_2\cup TC_3\cup \{R_1=S_2,\ R_1=S_3,\ R_2=R_3,\ T_2=T_3,\ T_1=Bool\}\\
     AC=AC_1\cup AC_2\cup AC_3\cup \{{a_i\le a\ }^{i=1,2,3},\ {R_j\ne S_j\Rightarrow a_j=i\ }^{j=1,2,3}\}
