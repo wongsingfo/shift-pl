@@ -378,7 +378,7 @@ $$
 \end{aligned}
 $$
 
-PS: $gen(\Gamma,T)$ means a type scheme generalizing type $T$ (in type context $\Gamma$)
+PS: $gen(\Gamma,T)$ is a type scheme generalizing type $T$ (in type context $\Gamma$). $unify(TC)$ means solve type constraints $TC$ (return a substitution). $apply(s,T)$ means apply substitution $s$ to type $T$ (return a new type).
 
 #### Let
 
@@ -399,7 +399,7 @@ $$
 
 $$
 \frac{
-    \Gamma\vdash t_1^{a_1}:T_1@[R_1,S_1,a_1];[TC_1,AC_1]\\\Gamma\vdash t_2^{a_2}:T_2@[R_2,S_2,a_2];[TC_2,AC_2]\\\Gamma\vdash t_3^{a_3}:T_3@[R_3,S_3,a_3];[TC_1,AC_1]\\
+    \Gamma\vdash t_1^{a_1}:T_1@[R_1,S_1,a_1];[TC_1,AC_1]\\\Gamma\vdash t_2^{a_2}:T_2@[R_2,S_2,a_2];[TC_2,AC_2]\\\Gamma\vdash t_3^{a_3}:T_3@[R_3,S_3,a_3];[TC_3,AC_3]\\
     a=\text{fresh}()\\
     TC=TC_1\cup TC_2\cup TC_3\cup \{R_1=S_2,\ R_1=S_3,\ R_2=R_3,\ T_2=T_3,\ T_1=Bool\}\\
     AC=AC_1\cup AC_2\cup AC_3\cup \{{a_i\le a\ }^{i=1,2,3},\ {R_j\ne S_j\Rightarrow a_j=i\ }^{j=1,2,3}\}
