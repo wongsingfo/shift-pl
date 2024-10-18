@@ -141,6 +141,7 @@ We introduce the concept of "annotation". It annotates whether `shift` operator 
 ### Syntax
 
 Constraint-based Typing Rules with Answer Type and Purity Annotation
+
 $$
 \begin{aligned}
 a:= & & purity\ annotations:\\
