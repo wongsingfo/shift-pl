@@ -242,6 +242,7 @@ Note that $C: T_1\rightarrow T_2$ and $K:T_3\rightarrow T_4$ are not formal repr
 The algorithmic evaluation rules above clearly shows the context/stack changing during evaluation, and can be easily used to implement a evaluation algorithm. However, since not every algorithmic evaluation rule stands for a reduction (some of them stand for stack-pushing or stack-popping), it's annoying to use them to formalize the properties like progress and preservation. Therefore, we introduce a set of syntactic evaluation rules here.
 
 Firstly we define the syntactic form of context: 
+
 $$
 \begin{aligned}
 C:= & & context\\
