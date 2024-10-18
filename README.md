@@ -1,5 +1,7 @@
 # Typed Delimited Continuation
 
+Project on the Design Principles of Programming Languages (2020) at Peking University.
+
 [toc]
 
 ## Work Division
